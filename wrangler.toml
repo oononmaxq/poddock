@@ -1,0 +1,16 @@
+name = "poddock"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "./dist"
+
+[vars]
+BASE_URL = "http://localhost:4321"
+R2_PUBLIC_URL = "https://pub-a71268a37f404e6d8fc19f54bc61d52a.r2.dev"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "poddock-db-staging"
+database_id = "b63d5c3b-b84d-4ff0-bfbd-68fced192af8"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "poddock-bucket-staging"

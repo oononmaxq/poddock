@@ -1,0 +1,116 @@
+---
+import Layout from '../../../presentation/ui/layouts/Layout.astro';
+---
+
+<Layout title="Distribution Help">
+  <div class="p-6 max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">How to Submit to Distribution Platforms</h1>
+
+    <div class="space-y-6">
+      <!-- Apple Podcasts -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Apple Podcasts</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Go to Apple Podcasts Connect (<a href="https://podcasters.apple.com/" target="_blank" rel="noopener" class="link link-primary">podcasters.apple.com</a>)</li>
+            <li>Sign in with your Apple ID (create one if needed)</li>
+            <li>Click "Add a new show"</li>
+            <li>Enter your poddock RSS URL</li>
+            <li>Review your show information and submit</li>
+            <li>Review takes a few days to 1 week</li>
+          </ol>
+          <div class="mt-4">
+            <h3 class="font-semibold">Requirements</h3>
+            <ul class="list-disc list-inside text-sm text-base-content/70">
+              <li>Show title, description, and category</li>
+              <li>Cover art (1400x1400 to 3000x3000px recommended)</li>
+              <li>At least one published episode</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spotify -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Spotify for Podcasters</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Go to Spotify for Podcasters (<a href="https://podcasters.spotify.com/" target="_blank" rel="noopener" class="link link-primary">podcasters.spotify.com</a>)</li>
+            <li>Log in with your Spotify account</li>
+            <li>Select "Get started" → "Add your podcast"</li>
+            <li>Enter your poddock RSS URL</li>
+            <li>Verify ownership (email verification may be required)</li>
+            <li>Review takes a few hours to a few days</li>
+          </ol>
+          <div class="mt-4">
+            <h3 class="font-semibold">Requirements</h3>
+            <ul class="list-disc list-inside text-sm text-base-content/70">
+              <li>Valid RSS feed</li>
+              <li>Show title and description</li>
+              <li>At least one published episode</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amazon Music -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Amazon Music for Podcasters</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Go to Amazon Music for Podcasters (<a href="https://podcasters.amazon.com/" target="_blank" rel="noopener" class="link link-primary">podcasters.amazon.com</a>)</li>
+            <li>Sign in with your Amazon account</li>
+            <li>Click "Submit your podcast"</li>
+            <li>Enter your poddock RSS URL</li>
+            <li>Review your show information and submit</li>
+            <li>Review takes a few days to 2 weeks</li>
+          </ol>
+          <div class="mt-4 p-3 bg-warning/10 rounded-lg">
+            <h3 class="font-semibold text-warning">Important: Contact Email Required</h3>
+            <p class="text-sm mt-1">
+              Amazon Music requires a contact email address (itunes:email) in the RSS feed.
+              Make sure to set the "Contact Email" in your podcast settings.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- YouTube Music -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">YouTube Music</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Go to YouTube Studio (<a href="https://studio.youtube.com/" target="_blank" rel="noopener" class="link link-primary">studio.youtube.com</a>)</li>
+            <li>Sign in with your Google account</li>
+            <li>Click "Create" → "New podcast" → "Submit RSS feed"</li>
+            <li>Enter your poddock RSS URL</li>
+            <li>Enter the verification code sent to the email in your RSS feed</li>
+            <li>Choose which episodes to publish and submit</li>
+            <li>You'll receive an email when your podcast is ready (a few days)</li>
+            <li>Go to YouTube Studio and click "Publish" to make it live</li>
+          </ol>
+          <div class="mt-4 p-3 bg-info/10 rounded-lg">
+            <h3 class="font-semibold text-info">Note: About Ads</h3>
+            <p class="text-sm mt-1">
+              YouTube Music does not allow dynamically inserted ads (DAI).
+              Host-read ads and sponsorships are allowed.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Submission Tips</h2>
+          <ul class="list-disc list-inside space-y-2 text-sm">
+            <li>Use poddock's "RSS Validation" feature to check requirements before submitting</li>
+            <li>Set visibility to "Public" before submitting your RSS URL</li>
+            <li>Avoid major changes to show information or episodes during review</li>
+            <li>If rejected, check the error message, fix the issue, and resubmit</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

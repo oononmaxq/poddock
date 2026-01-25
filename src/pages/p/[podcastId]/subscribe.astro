@@ -1,0 +1,139 @@
+---
+import '../../../styles/global.css';
+import { createDb } from '../../../infrastructure/db/client';
+import { podcasts, assets } from '../../../infrastructure/db/schema';
+import { eq, and } from 'drizzle-orm';
+
+const { podcastId } = Astro.params;
+const db = createDb(Astro.locals.runtime.env.DB);
+
+// Fetch podcast data
+const podcastData = await db
+  .select({
+    id: podcasts.id,
+    title: podcasts.title,
+    language: podcasts.language,
+    visibility: podcasts.visibility,
+    theme_color: podcasts.themeColor,
+    theme_mode: podcasts.themeMode,
+    cover_image_asset_id: podcasts.coverImageAssetId,
+  })
+  .from(podcasts)
+  .where(and(eq(podcasts.id, podcastId!), eq(podcasts.visibility, 'public')))
+  .get();
+
+if (!podcastData) {
+  return Astro.redirect('/404');
+}
+
+// Get cover image
+let coverImage = null;
+if (podcastData.cover_image_asset_id) {
+  coverImage = await db
+    .select({ public_url: assets.publicUrl })
+    .from(assets)
+    .where(eq(assets.id, podcastData.cover_image_asset_id))
+    .get();
+}
+
+const podcast = { ...podcastData, cover_image: coverImage };
+
+const themeColor = podcast.theme_color || '#6366f1';
+const themeMode = podcast.theme_mode || 'light';
+const rssUrl = `${Astro.url.origin}/rss/${podcastId}.xml`;
+
+// Platform links (these would be populated from distribution statuses)
+const platforms = [
+  { id: 'apple', name: 'Apple Podcasts', icon: '/badges/apple-podcasts.svg', url: null },
+  { id: 'spotify', name: 'Spotify', icon: '/badges/spotify.svg', url: null },
+  { id: 'amazon', name: 'Amazon Music', icon: '/badges/amazon-music.svg', url: null },
+  { id: 'youtube', name: 'YouTube Music', icon: '/badges/youtube-music.svg', url: null },
+];
+---
+
+<!doctype html>
+<html lang={podcast.language || 'ja'} data-theme={themeMode}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>購読する | {podcast.title}</title>
+    <meta name="description" content={`${podcast.title}を購読する`} />
+    <style define:vars={{ themeColor }}>
+      .theme-primary { color: var(--themeColor); }
+      .theme-bg { background-color: var(--themeColor); }
+      .theme-border { border-color: var(--themeColor); }
+    </style>
+  </head>
+  <body class="min-h-screen bg-base-100">
+    <!-- Header -->
+    <header class="navbar bg-base-200 border-b border-base-300 px-4 lg:px-8">
+      <div class="flex-1">
+        <a href={`/p/${podcastId}`} class="text-xl font-bold">{podcast.title}</a>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 lg:px-8 py-12 max-w-2xl">
+      <!-- Hero -->
+      <div class="text-center mb-12">
+        {podcast.cover_image?.public_url && (
+          <img
+            src={podcast.cover_image.public_url}
+            alt={podcast.title}
+            class="w-40 h-40 rounded-lg shadow-lg mx-auto mb-6"
+          />
+        )}
+        <h1 class="text-3xl font-bold mb-2">{podcast.title}</h1>
+        <p class="text-xl text-base-content/70">を購読する</p>
+      </div>
+
+      <!-- Platform Buttons -->
+      <div class="space-y-4 mb-12">
+        <h2 class="text-lg font-semibold text-center mb-6">お好みのアプリで購読</h2>
+
+        <div class="grid gap-3">
+          {platforms.map((platform) => (
+            <button
+              class="btn btn-lg btn-outline w-full justify-start gap-4"
+              disabled={!platform.url}
+            >
+              <img src={platform.icon} alt={platform.name} class="h-8" />
+              <span>{platform.name}で聴く</span>
+              {!platform.url && <span class="badge badge-sm ml-auto">準備中</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- RSS Feed -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg">その他のアプリ</h2>
+          <p class="text-base-content/70 mb-4">
+            RSSフィードをお使いのポッドキャストアプリに登録してください
+          </p>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              value={rssUrl}
+              class="input input-bordered flex-1 font-mono text-sm"
+              readonly
+              id="rss-url"
+            />
+            <button
+              class="btn theme-bg text-white border-0"
+              onclick="navigator.clipboard.writeText(document.getElementById('rss-url').value); this.textContent = 'コピー済み'; setTimeout(() => this.textContent = 'コピー', 2000)"
+            >
+              コピー
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-8 px-4 text-center text-base-content/60 border-t border-base-200">
+      <p>Powered by <a href="/" class="link">poddock</a></p>
+    </footer>
+  </body>
+</html>

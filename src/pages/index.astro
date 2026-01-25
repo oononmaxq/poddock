@@ -1,0 +1,468 @@
+---
+import { getLangFromUrl } from '../i18n/translations';
+
+const lang = getLangFromUrl(Astro.url);
+---
+
+<!doctype html>
+<html lang={lang} data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>poddock - ポッドキャストをどこにでも配信</title>
+    <script is:inline>
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+      body { font-family: 'Inter', sans-serif; }
+
+      /* Smooth wave animation */
+      .wave-bg {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .wave-bg svg {
+        position: absolute;
+        bottom: 0;
+        width: 200%;
+        height: 300px;
+        opacity: 0.1;
+      }
+      .wave-bg .wave1 {
+        animation: wave-flow 8s linear infinite;
+      }
+      .wave-bg .wave2 {
+        animation: wave-flow 12s linear infinite reverse;
+        opacity: 0.07;
+      }
+      .wave-bg .wave3 {
+        animation: wave-flow 10s linear infinite;
+        opacity: 0.05;
+      }
+      @keyframes wave-flow {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+
+      /* Fade-in animation on scroll */
+      .fade-in-card {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      }
+      .fade-in-card.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-base-100">
+    <!-- Header -->
+    <header class="navbar bg-base-100 border-b border-base-200 px-6 lg:px-12">
+      <div class="flex-1">
+        <a href="/" class="text-2xl font-bold">poddock</a>
+      </div>
+      <div class="flex-none gap-2">
+        <a href="/login" class="btn btn-ghost">ログイン</a>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="min-h-[calc(100vh-4rem)] flex flex-col justify-center px-6 lg:px-12 text-center relative" style="background-image: url('/start_your_podcast.png'); background-size: cover; background-position: center;">
+      <!-- Overlay -->
+      <div class="absolute inset-0 bg-base-100/80"></div>
+      <div class="relative z-10">
+        <h1 class="text-4xl lg:text-6xl font-bold mb-6">
+          番組運営を、もっとシンプルに。
+        </h1>
+        <p class="text-xl text-base-content/70 mb-8 max-w-2xl mx-auto" style="word-break: keep-all; overflow-wrap: break-word;">
+          Spotify、Apple Podcasts、Amazon Music、YouTube Music など<br class="hidden sm:inline" />主要プラットフォームへ簡単に音声配信。<br />
+          ホスティングから分析まで、すべてを一箇所で管理。
+        </p>
+        <div class="flex justify-center gap-4 mb-12">
+          <a href="/signup" class="btn btn-primary btn-lg">無料で始める</a>
+        </div>
+        <div class="flex flex-wrap justify-center items-center gap-6 lg:gap-8">
+          <span class="text-sm text-base-content/60">配信先:</span>
+          <div class="flex flex-wrap justify-center items-center gap-6">
+            <img src="/badges/spotify.svg" alt="Listen on Spotify" class="h-10" />
+            <img src="/badges/apple-podcasts.svg" alt="Listen on Apple Podcasts" class="h-10" />
+            <img src="/badges/amazon-music.svg" alt="Listen on Amazon Music" class="h-10" />
+            <img src="/badges/youtube-music.svg" alt="Listen on YouTube Music" class="h-10" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- What? - Problem -->
+    <section class="min-h-screen py-24 px-6 lg:px-12 bg-base-200 flex items-center">
+      <div class="max-w-4xl mx-auto w-full">
+        <!-- Problem Statement -->
+        <div class="text-center mb-12">
+          <h2 class="text-3xl lg:text-4xl font-bold mb-4">リスナーに届けるなら、全部に配信したい。</h2>
+          <p class="text-xl text-base-content/70">でも、それぞれ管理するのは大変...</p>
+        </div>
+
+        <!-- Platform logos showing the complexity -->
+        <div class="card bg-base-100 mb-12">
+          <div class="card-body">
+            <div class="flex flex-wrap justify-center items-center gap-6 mb-6">
+              <img src="/badges/spotify.svg" alt="Spotify" class="h-10 opacity-60" />
+              <span class="text-2xl text-base-content/30">+</span>
+              <img src="/badges/apple-podcasts.svg" alt="Apple Podcasts" class="h-10 opacity-60" />
+              <span class="text-2xl text-base-content/30">+</span>
+              <img src="/badges/amazon-music.svg" alt="Amazon Music" class="h-10 opacity-60" />
+              <span class="text-2xl text-base-content/30">+</span>
+              <img src="/badges/youtube-music.svg" alt="YouTube Music" class="h-10 opacity-60" />
+              <span class="text-2xl text-base-content/30">+ ...</span>
+            </div>
+            <p class="text-center text-base-content/70">それぞれに登録して、それぞれの管理画面で確認して...</p>
+          </div>
+        </div>
+
+        <!-- Solution -->
+        <div class="bg-primary/10 rounded-2xl p-8 text-center">
+          <p class="text-2xl font-bold text-primary mb-6">poddockなら、ひとつの画面ですべて管理。</p>
+          <div class="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 mb-6">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">1</span>
+              <span>番組を作る</span>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/30 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">2</span>
+              <span>配信先に登録<span class="text-xs text-base-content/50 ml-1">（初回のみ）</span></span>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/30 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">3</span>
+              <span>エピソードを公開</span>
+            </div>
+          </div>
+          <p class="text-base-content/70">あとは音声をアップするたびに、自動で全プラットフォームに配信。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="min-h-screen flex flex-col justify-center py-16 px-6 lg:px-12">
+      <div class="max-w-6xl mx-auto w-full">
+        <h2 class="text-3xl font-bold text-center mb-12">主な機能</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="card bg-base-100 fade-in-card">
+            <div class="card-body">
+              <div class="w-12 h-12 mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                </svg>
+              </div>
+              <h3 class="card-title">簡単アップロード</h3>
+              <p class="text-base-content/70">音声ファイルをドラッグ&ドロップするだけ。自動でRSSフィードを生成します。</p>
+            </div>
+          </div>
+          <div class="card bg-base-100 fade-in-card">
+            <div class="card-body">
+              <div class="w-12 h-12 mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12.75 3.03v.568c0 .334.148.65.405.864l1.068.89c.442.369.535 1.01.216 1.49l-.51.766a2.25 2.25 0 0 1-1.161.886l-.143.048a1.107 1.107 0 0 0-.57 1.664c.369.555.169 1.307-.427 1.605L9 13.125l.423 1.059a.956.956 0 0 1-1.652.928l-.679-.906a1.125 1.125 0 0 0-1.906.172L4.5 15.75l-.612.153M12.75 3.031a9 9 0 1 0 6.712 14.374M12.75 3.03V1.5m0 1.53v.568" />
+                </svg>
+              </div>
+              <h3 class="card-title">どこにでも配信</h3>
+              <p class="text-base-content/70" style="word-break: keep-all;">Spotify、Apple Podcasts、Amazon Music、YouTube Musicなど主要プラットフォームに対応。</p>
+            </div>
+          </div>
+          <div class="card bg-base-100 fade-in-card">
+            <div class="card-body">
+              <div class="w-12 h-12 mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                </svg>
+              </div>
+              <h3 class="card-title">分析ダッシュボード</h3>
+              <p class="text-base-content/70">再生数、リスナー数、人気エピソードをリアルタイムで確認。</p>
+            </div>
+          </div>
+          <div class="card bg-base-100 fade-in-card">
+            <div class="card-body">
+              <div class="w-12 h-12 mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <h3 class="card-title">プライベート配信</h3>
+              <p class="text-base-content/70">社内向け、有料会員向けなど限定配信にも対応。</p>
+            </div>
+          </div>
+          <div class="card bg-base-100 fade-in-card">
+            <div class="card-body">
+              <div class="w-12 h-12 mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+                </svg>
+              </div>
+              <h3 class="card-title">カスタマイズ</h3>
+              <p class="text-base-content/70">番組ページをあなたのブランドに合わせてカスタマイズ。</p>
+            </div>
+          </div>
+          <div class="card bg-base-100 fade-in-card">
+            <div class="card-body">
+              <div class="w-12 h-12 mb-4 text-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                </svg>
+              </div>
+              <h3 class="card-title">高速配信</h3>
+              <p class="text-base-content/70">グローバルCDNで世界中のリスナーに高速配信。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="min-h-screen flex flex-col justify-center py-20 px-6 lg:px-12">
+      <div class="max-w-6xl mx-auto w-full">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold mb-4">料金プラン</h2>
+          <p class="text-xl text-base-content/70 mb-8">あなたのポッドキャストに最適なプランを選択</p>
+
+          <!-- Monthly/Yearly Toggle -->
+          <div class="flex justify-center items-center gap-4 mb-4">
+            <span class="text-base-content/70">月払い</span>
+            <input type="checkbox" id="billing-toggle" class="toggle toggle-primary" checked />
+            <span class="text-base-content/70">年払い<span class="badge badge-success badge-sm ml-2">2ヶ月分お得</span></span>
+          </div>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Free -->
+          <div class="card bg-base-200 fade-in-card">
+            <div class="card-body text-center">
+              <h3 class="text-lg font-semibold">Free</h3>
+              <div class="my-4">
+                <span class="text-4xl font-bold">¥0</span>
+              </div>
+              <ul class="text-left space-y-3 text-sm">
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>2番組</strong>まで</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>10エピソード</strong>/番組</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>10,000</strong> 再生/月</span>
+                </li>
+              </ul>
+              <div class="mt-auto pt-6">
+                <a href="/signup" class="btn btn-primary w-full">無料で始める</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Starter (準備中) -->
+          <div class="card bg-base-200 fade-in-card relative overflow-hidden">
+            <div class="card-body text-center blur-[2px] opacity-60 select-none">
+              <h3 class="text-lg font-semibold">Starter</h3>
+              <div class="my-4">
+                <span class="text-4xl font-bold price-monthly hidden">¥1,180</span>
+                <span class="text-4xl font-bold price-yearly">¥980</span>
+                <span class="text-base-content/70">/月</span>
+              </div>
+              <ul class="text-left space-y-3 text-sm">
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>10番組</strong>まで</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>無制限</strong>のエピソード</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>30,000</strong> 再生/月</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>基本アナリティクス</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>メールサポート</span>
+                </li>
+              </ul>
+              <div class="mt-auto pt-6">
+                <span class="btn btn-primary w-full btn-disabled">Starterを始める</span>
+              </div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="badge badge-lg badge-neutral text-base px-4 py-3">準備中</span>
+            </div>
+          </div>
+
+          <!-- Pro (準備中) -->
+          <div class="card bg-primary text-primary-content fade-in-card relative overflow-hidden">
+            <div class="card-body text-center blur-[2px] opacity-60 select-none">
+              <h3 class="text-lg font-semibold">Pro</h3>
+              <div class="my-4">
+                <span class="text-4xl font-bold price-monthly hidden">¥3,580</span>
+                <span class="text-4xl font-bold price-yearly">¥2,980</span>
+                <span class="opacity-70">/月</span>
+              </div>
+              <ul class="text-left space-y-3 text-sm">
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>無制限</strong>の番組</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>無制限</strong>のエピソード</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span><strong>500,000</strong> 再生/月</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>詳細アナリティクス</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>プライベート配信</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>チームメンバー <strong>5人</strong></span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>優先サポート</span>
+                </li>
+              </ul>
+              <div class="mt-auto pt-6">
+                <span class="btn btn-secondary w-full btn-disabled">Proを始める</span>
+              </div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="badge badge-lg badge-neutral text-base px-4 py-3">準備中</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="min-h-screen py-20 px-6 lg:px-12 bg-base-200 flex items-center">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-3xl font-bold text-center mb-12">よくある質問</h2>
+
+        <div class="space-y-4">
+          <div class="collapse collapse-arrow bg-base-100">
+            <input type="radio" name="faq-accordion" checked />
+            <div class="collapse-title text-lg font-medium">
+              ポッドキャストを始めるのに必要なものは？
+            </div>
+            <div class="collapse-content">
+              <p class="text-base-content/70">音声ファイル（MP3など）とカバーアートがあれば始められます。マイクやDAWソフトは既にお持ちのもので問題ありません。</p>
+            </div>
+          </div>
+
+          <div class="collapse collapse-arrow bg-base-100">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              Spotify や Apple Podcasts への配信はどうやるの？
+            </div>
+            <div class="collapse-content">
+              <p class="text-base-content/70">poddockで番組を作成するとRSSフィードが自動生成されます。そのURLを各プラットフォームに登録するだけで配信が開始されます。詳しい手順はヘルプページをご覧ください。</p>
+            </div>
+          </div>
+
+          <div class="collapse collapse-arrow bg-base-100">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              無料プランでも広告は入りますか？
+            </div>
+            <div class="collapse-content">
+              <p class="text-base-content/70">いいえ、poddockが挿入する広告はありません。無料プランでもあなたのコンテンツはそのまま配信されます。</p>
+            </div>
+          </div>
+
+          <div class="collapse collapse-arrow bg-base-100">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              あとからプランを変更できますか？
+            </div>
+            <div class="collapse-content">
+              <p class="text-base-content/70">はい、いつでもアップグレード・ダウングレードが可能です。プラン変更は即時反映され、日割り計算で調整されます。</p>
+            </div>
+          </div>
+
+          <div class="collapse collapse-arrow bg-base-100">
+            <input type="radio" name="faq-accordion" />
+            <div class="collapse-title text-lg font-medium">
+              既存のポッドキャストを移行できますか？
+            </div>
+            <div class="collapse-content">
+              <p class="text-base-content/70">はい、他のホスティングサービスからの移行をサポートしています。RSSフィードをインポートするだけで、エピソード情報を自動で取り込めます。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-20 px-6 lg:px-12 text-center">
+      <h2 class="text-3xl font-bold mb-6">今すぐポッドキャストを始めよう</h2>
+      <p class="text-xl text-base-content/70 mb-8">シンプルな料金、透明な価格設定。</p>
+      <a href="/signup" class="btn btn-primary btn-lg">無料で始める</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-6 lg:px-12 border-t border-base-200 text-center text-base-content/60">
+      <p>&copy; 2024 poddock. All rights reserved.</p>
+    </footer>
+
+    <script>
+      // Fade-in animation on scroll
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const delay = entry.target.dataset.delay || 0;
+            setTimeout(() => {
+              entry.target.classList.add('visible');
+            }, delay);
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.fade-in-card').forEach((card, index) => {
+        card.dataset.delay = index * 100;
+        observer.observe(card);
+      });
+
+      // Billing toggle (Monthly/Yearly)
+      const billingToggle = document.getElementById('billing-toggle');
+      const monthlyPrices = document.querySelectorAll('.price-monthly');
+      const yearlyPrices = document.querySelectorAll('.price-yearly');
+
+      billingToggle?.addEventListener('change', () => {
+        const isYearly = billingToggle.checked;
+        monthlyPrices.forEach(el => el.classList.toggle('hidden', isYearly));
+        yearlyPrices.forEach(el => el.classList.toggle('hidden', !isYearly));
+      });
+    </script>
+  </body>
+</html>

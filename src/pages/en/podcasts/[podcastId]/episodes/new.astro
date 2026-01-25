@@ -1,0 +1,10 @@
+---
+import Layout from '../../../../../presentation/ui/layouts/Layout.astro';
+import { EpisodeCreate } from '../../../../../presentation/ui/features/episode';
+
+const { podcastId } = Astro.params;
+---
+
+<Layout title="Create Episode">
+  <EpisodeCreate client:load podcastId={podcastId!} />
+</Layout>

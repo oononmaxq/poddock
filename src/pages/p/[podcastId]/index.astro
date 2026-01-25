@@ -1,0 +1,153 @@
+---
+import '../../../styles/global.css';
+import { createDb } from '../../../infrastructure/db/client';
+import { podcasts, episodes as episodesTable, assets } from '../../../infrastructure/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
+
+const { podcastId } = Astro.params;
+const db = createDb(Astro.locals.runtime.env.DB);
+
+// Fetch podcast data
+const podcastData = await db
+  .select({
+    id: podcasts.id,
+    title: podcasts.title,
+    description: podcasts.description,
+    language: podcasts.language,
+    category: podcasts.category,
+    author_name: podcasts.authorName,
+    visibility: podcasts.visibility,
+    theme_color: podcasts.themeColor,
+    theme_mode: podcasts.themeMode,
+    cover_image_asset_id: podcasts.coverImageAssetId,
+  })
+  .from(podcasts)
+  .where(and(eq(podcasts.id, podcastId!), eq(podcasts.visibility, 'public')))
+  .get();
+
+if (!podcastData) {
+  return Astro.redirect('/404');
+}
+
+// Get cover image
+let coverImage = null;
+if (podcastData.cover_image_asset_id) {
+  coverImage = await db
+    .select({ public_url: assets.publicUrl })
+    .from(assets)
+    .where(eq(assets.id, podcastData.cover_image_asset_id))
+    .get();
+}
+
+const podcast = { ...podcastData, cover_image: coverImage };
+
+// Fetch episodes
+const episodeList = await db
+  .select({
+    id: episodesTable.id,
+    title: episodesTable.title,
+    description: episodesTable.description,
+    published_at: episodesTable.publishedAt,
+    duration_seconds: episodesTable.durationSeconds,
+  })
+  .from(episodesTable)
+  .where(and(eq(episodesTable.podcastId, podcastId!), eq(episodesTable.status, 'published')))
+  .orderBy(desc(episodesTable.publishedAt));
+
+const episodes = episodeList;
+
+const themeColor = podcast.theme_color || '#6366f1';
+const themeMode = podcast.theme_mode || 'light';
+---
+
+<!doctype html>
+<html lang={podcast.language || 'ja'} data-theme={themeMode}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{podcast.title}</title>
+    <meta name="description" content={podcast.description} />
+    <link rel="alternate" type="application/rss+xml" title={podcast.title} href={`/rss/${podcastId}.xml`} />
+    <style define:vars={{ themeColor }}>
+      .theme-primary { color: var(--themeColor); }
+      .theme-bg { background-color: var(--themeColor); }
+      .theme-border { border-color: var(--themeColor); }
+    </style>
+  </head>
+  <body class="min-h-screen bg-base-100">
+    <!-- Header -->
+    <header class="navbar bg-base-200 border-b border-base-300 px-4 lg:px-8">
+      <div class="flex-1">
+        <a href={`/p/${podcastId}`} class="text-xl font-bold">{podcast.title}</a>
+      </div>
+      <div class="flex-none">
+        <a href={`/p/${podcastId}/subscribe`} class="btn btn-sm theme-bg text-white border-0">
+          購読する
+        </a>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 lg:px-8 py-8 max-w-4xl">
+      <!-- Hero -->
+      <div class="flex flex-col md:flex-row gap-6 mb-12">
+        {podcast.cover_image?.public_url && (
+          <img
+            src={podcast.cover_image.public_url}
+            alt={podcast.title}
+            class="w-48 h-48 rounded-lg shadow-lg flex-shrink-0 mx-auto md:mx-0"
+          />
+        )}
+        <div class="flex-1 text-center md:text-left">
+          <h1 class="text-3xl font-bold mb-4">{podcast.title}</h1>
+          {podcast.author_name && (
+            <p class="text-base-content/70 mb-2">by {podcast.author_name}</p>
+          )}
+          <p class="text-base-content/80 whitespace-pre-line">{podcast.description}</p>
+        </div>
+      </div>
+
+      <!-- Episodes -->
+      <section>
+        <h2 class="text-2xl font-bold mb-6">エピソード</h2>
+
+        {episodes.length === 0 ? (
+          <div class="card bg-base-200">
+            <div class="card-body text-center py-12">
+              <p class="text-base-content/70">エピソードはまだありません</p>
+            </div>
+          </div>
+        ) : (
+          <div class="space-y-4">
+            {episodes.map((episode: any) => (
+              <a
+                href={`/p/${podcastId}/episodes/${episode.id}`}
+                class="card bg-base-200 hover:bg-base-300 transition-colors block"
+              >
+                <div class="card-body py-4">
+                  <h3 class="font-semibold text-lg">{episode.title}</h3>
+                  <p class="text-sm text-base-content/70">
+                    {new Date(episode.published_at).toLocaleDateString(podcast.language === 'ja' ? 'ja-JP' : 'en-US')}
+                    {episode.duration_seconds && (
+                      <span class="ml-2">
+                        {Math.floor(episode.duration_seconds / 60)}分
+                      </span>
+                    )}
+                  </p>
+                  {episode.description && (
+                    <p class="text-base-content/80 line-clamp-2 mt-2">{episode.description}</p>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-8 px-4 text-center text-base-content/60 border-t border-base-200">
+      <p>Powered by <a href="/" class="link">poddock</a></p>
+    </footer>
+  </body>
+</html>

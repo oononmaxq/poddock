@@ -1,0 +1,124 @@
+---
+import Layout from '../presentation/ui/layouts/Layout.astro';
+import { getLangFromUrl, useTranslations, languages } from '../i18n/translations';
+
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
+---
+
+<Layout title={t('settings.title')}>
+  <div class="p-6 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">{t('settings.title')}</h1>
+
+    <div class="space-y-6">
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg">{t('settings.language')}</h2>
+          <p class="text-sm text-base-content/70 mb-4">{t('settings.language.description')}</p>
+
+          <div class="flex flex-wrap gap-2">
+            {Object.entries(languages).map(([code, name]) => (
+              <button
+                type="button"
+                class={`btn ${lang === code ? 'btn-primary' : 'btn-outline'}`}
+                data-lang={code}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg">{t('settings.theme')}</h2>
+          <p class="text-sm text-base-content/70 mb-4">{t('settings.theme.description')}</p>
+
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline" data-theme-btn="light">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              {t('settings.theme.light')}
+            </button>
+            <button type="button" class="btn btn-outline" data-theme-btn="dark">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+              {t('settings.theme.dark')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  function updateThemeButtonStates() {
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.querySelectorAll('[data-theme-btn]').forEach((btn) => {
+      const theme = (btn as HTMLElement).dataset.themeBtn;
+      if (theme === currentTheme) {
+        btn.classList.remove('btn-outline');
+        btn.classList.add('btn-primary');
+      } else {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+      }
+    });
+  }
+
+  function handleThemeClick(e: Event) {
+    const newTheme = (e.currentTarget as HTMLElement).dataset.themeBtn;
+    if (!newTheme) return;
+
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+    updateThemeButtonStates();
+
+    // Show toast
+    const message = newTheme === 'dark' ? 'ダークモードに変更しました' : 'ライトモードに変更しました';
+    window.dispatchEvent(new CustomEvent('show-toast', {
+      detail: { id: Date.now(), message, type: 'success' }
+    }));
+  }
+
+  function handleLangClick(e: Event) {
+    const newLang = (e.currentTarget as HTMLElement).dataset.lang;
+    if (!newLang) return;
+
+    localStorage.setItem('preferred_language', newLang);
+
+    // Show toast after redirect
+    const message = newLang === 'ja' ? '言語を切り替えました' : 'Language changed';
+    sessionStorage.setItem('pending-toast', JSON.stringify({ message, type: 'success' }));
+
+    // Redirect to settings in the new language
+    if (newLang === 'ja') {
+      window.location.href = '/settings';
+    } else {
+      window.location.href = `/${newLang}/settings`;
+    }
+  }
+
+  function initSettings() {
+    updateThemeButtonStates();
+
+    // Remove old listeners and add new ones
+    document.querySelectorAll('[data-theme-btn]').forEach((btn) => {
+      btn.removeEventListener('click', handleThemeClick);
+      btn.addEventListener('click', handleThemeClick);
+    });
+
+    document.querySelectorAll('[data-lang]').forEach((btn) => {
+      btn.removeEventListener('click', handleLangClick);
+      btn.addEventListener('click', handleLangClick);
+    });
+  }
+
+  // Initialize on first load and after View Transitions
+  initSettings();
+  document.addEventListener('astro:page-load', initSettings);
+</script>

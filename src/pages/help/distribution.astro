@@ -1,0 +1,116 @@
+---
+import Layout from '../../presentation/ui/layouts/Layout.astro';
+---
+
+<Layout title="配信ヘルプ">
+  <div class="p-6 max-w-3xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">配信先への提出方法</h1>
+
+    <div class="space-y-6">
+      <!-- Apple Podcasts -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Apple Podcasts</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Apple Podcasts Connect (<a href="https://podcasters.apple.com/" target="_blank" rel="noopener" class="link link-primary">podcasters.apple.com</a>) にアクセス</li>
+            <li>Apple ID でサインイン（なければ作成）</li>
+            <li>「新しい番組を追加」をクリック</li>
+            <li>poddock の RSS URL を入力</li>
+            <li>番組情報を確認して送信</li>
+            <li>審査完了まで数日〜1週間程度</li>
+          </ol>
+          <div class="mt-4">
+            <h3 class="font-semibold">必須要件</h3>
+            <ul class="list-disc list-inside text-sm text-base-content/70">
+              <li>番組タイトル、説明、カテゴリ</li>
+              <li>カバーアート（1400x1400〜3000x3000px推奨）</li>
+              <li>少なくとも1つの公開エピソード</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spotify -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Spotify for Podcasters</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Spotify for Podcasters (<a href="https://podcasters.spotify.com/" target="_blank" rel="noopener" class="link link-primary">podcasters.spotify.com</a>) にアクセス</li>
+            <li>Spotify アカウントでログイン</li>
+            <li>「Get started」→「Add your podcast」を選択</li>
+            <li>poddock の RSS URL を入力</li>
+            <li>所有権の確認（メール送信される場合あり）</li>
+            <li>審査完了まで数時間〜数日</li>
+          </ol>
+          <div class="mt-4">
+            <h3 class="font-semibold">必須要件</h3>
+            <ul class="list-disc list-inside text-sm text-base-content/70">
+              <li>有効な RSS フィード</li>
+              <li>番組タイトル、説明</li>
+              <li>少なくとも1つの公開エピソード</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amazon Music -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">Amazon Music for Podcasters</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Amazon Music for Podcasters (<a href="https://podcasters.amazon.com/" target="_blank" rel="noopener" class="link link-primary">podcasters.amazon.com</a>) にアクセス</li>
+            <li>Amazon アカウントでサインイン</li>
+            <li>「Submit your podcast」をクリック</li>
+            <li>poddock の RSS URL を入力</li>
+            <li>番組情報を確認して送信</li>
+            <li>審査完了まで数日〜2週間程度</li>
+          </ol>
+          <div class="mt-4 p-3 bg-warning/10 rounded-lg">
+            <h3 class="font-semibold text-warning">重要: 連絡先メールアドレス</h3>
+            <p class="text-sm mt-1">
+              Amazon Music への配信には、RSS内に連絡先メールアドレス（itunes:email）が必須です。
+              番組設定で「連絡先メールアドレス」を必ず設定してください。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- YouTube Music -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">YouTube Music</h2>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>YouTube Studio (<a href="https://studio.youtube.com/" target="_blank" rel="noopener" class="link link-primary">studio.youtube.com</a>) にアクセス</li>
+            <li>Google アカウントでログイン</li>
+            <li>「作成」→「新しいポッドキャスト」→「RSSフィードを送信」を選択</li>
+            <li>poddock の RSS URL を入力</li>
+            <li>RSSに記載のメールアドレスに届く認証コードを入力</li>
+            <li>公開するエピソードを選択して送信</li>
+            <li>数日後にメールで準備完了の通知が届く</li>
+            <li>YouTube Studio でポッドキャストを「公開」する</li>
+          </ol>
+          <div class="mt-4 p-3 bg-info/10 rounded-lg">
+            <h3 class="font-semibold text-info">注意: 広告について</h3>
+            <p class="text-sm mt-1">
+              YouTube Music では動的広告挿入（DAI）を含むコンテンツは許可されていません。
+              ホストリード広告（自分で読み上げる広告）は許可されています。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="card bg-base-200">
+        <div class="card-body">
+          <h2 class="card-title">提出のコツ</h2>
+          <ul class="list-disc list-inside space-y-2 text-sm">
+            <li>提出前に poddock の「RSSバリデーション」機能で要件をチェック</li>
+            <li>公開設定を「公開」にしてからRSS URLを提出</li>
+            <li>審査中は番組情報やエピソードの大幅な変更を避ける</li>
+            <li>審査に落ちた場合は、エラーメッセージを確認して修正後に再提出</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

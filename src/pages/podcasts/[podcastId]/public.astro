@@ -1,0 +1,176 @@
+---
+// Public podcast page (for RSS channel/link)
+import { createDb } from '../../../infrastructure/db/client';
+import { podcasts, episodes, assets } from '../../../infrastructure/db/schema';
+import { eq, and, desc } from 'drizzle-orm';
+
+const { podcastId } = Astro.params;
+const env = Astro.locals.runtime.env;
+const db = createDb(env.DB);
+
+const podcast = await db.query.podcasts.findFirst({
+  where: eq(podcasts.id, podcastId || ''),
+});
+
+if (!podcast) {
+  return Astro.redirect('/404');
+}
+
+// Get published episodes
+const publishedEpisodes = await db
+  .select({
+    episode: episodes,
+    audio: assets,
+  })
+  .from(episodes)
+  .leftJoin(assets, eq(episodes.audioAssetId, assets.id))
+  .where(
+    and(
+      eq(episodes.podcastId, podcastId || ''),
+      eq(episodes.status, 'published')
+    )
+  )
+  .orderBy(desc(episodes.publishedAt))
+  .limit(10);
+
+// Get cover image
+let coverImageUrl: string | null = null;
+if (podcast.coverImageAssetId) {
+  const coverAsset = await db.query.assets.findFirst({
+    where: eq(assets.id, podcast.coverImageAssetId),
+  });
+  if (coverAsset) {
+    coverImageUrl = coverAsset.publicUrl;
+  }
+}
+
+const baseUrl = env.BASE_URL;
+const rssUrl = `${baseUrl}/rss/${podcast.id}.xml`;
+---
+
+<!doctype html>
+<html lang={podcast.language}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{podcast.title}</title>
+    <meta name="description" content={podcast.description} />
+    <link rel="alternate" type="application/rss+xml" title={podcast.title} href={rssUrl} />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+      header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+      .cover {
+        width: 200px;
+        height: 200px;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        object-fit: cover;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+      .meta {
+        color: #666;
+        font-size: 0.9rem;
+      }
+      .description {
+        margin-top: 1rem;
+        color: #555;
+      }
+      .rss-link {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.5rem 1rem;
+        background: #f60;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+      }
+      .rss-link:hover {
+        background: #e55;
+      }
+      .episodes {
+        margin-top: 2rem;
+      }
+      .episodes h2 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+      }
+      .episode {
+        padding: 1rem 0;
+        border-bottom: 1px solid #eee;
+      }
+      .episode h3 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+      }
+      .episode .date {
+        font-size: 0.85rem;
+        color: #666;
+      }
+      .episode .desc {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #555;
+      }
+      footer {
+        margin-top: 3rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #999;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      {coverImageUrl && <img src={coverImageUrl} alt="" class="cover" />}
+      <h1>{podcast.title}</h1>
+      <p class="meta">
+        {podcast.authorName && <span>by {podcast.authorName}</span>}
+        <span> • {podcast.category}</span>
+      </p>
+      <p class="description">{podcast.description}</p>
+      <a href={rssUrl} class="rss-link">RSS Feed</a>
+    </header>
+
+    {publishedEpisodes.length > 0 && (
+      <section class="episodes">
+        <h2>Episodes</h2>
+        {publishedEpisodes.map(({ episode }) => (
+          <article class="episode">
+            <h3>{episode.title}</h3>
+            <p class="date">
+              {episode.publishedAt
+                ? new Date(episode.publishedAt).toLocaleDateString('ja-JP')
+                : ''}
+            </p>
+            {episode.description && <p class="desc">{episode.description}</p>}
+          </article>
+        ))}
+      </section>
+    )}
+
+    <footer>
+      <p>Powered by poddock</p>
+    </footer>
+  </body>
+</html>
