@@ -8,6 +8,7 @@ import { PodcastOverview } from './PodcastOverview';
 import { EpisodeList } from './EpisodeList';
 import { DistributionList } from './DistributionList';
 import { PodcastSettings } from './PodcastSettings';
+import { AnalyticsDashboard } from '../analytics/AnalyticsDashboard';
 
 interface Podcast {
   id: string;
@@ -39,7 +40,7 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
   const getInitialTab = () => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.slice(1);
-      if (['overview', 'episodes', 'distribution', 'settings'].includes(hash)) {
+      if (['overview', 'episodes', 'analytics', 'distribution', 'settings'].includes(hash)) {
         return hash;
       }
     }
@@ -59,6 +60,11 @@ export function PodcastDetail({ podcastId }: PodcastDetailProps) {
       id: 'episodes',
       label: t('podcast.tabs.episodes'),
       content: <EpisodeList podcastId={podcastId} />,
+    },
+    {
+      id: 'analytics',
+      label: t('podcast.tabs.analytics'),
+      content: <AnalyticsDashboard podcastId={podcastId} />,
     },
     {
       id: 'distribution',

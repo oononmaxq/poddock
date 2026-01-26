@@ -1,12 +1,13 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import type { AppEnv } from '../types';
 import { AppError } from '../middleware/error-handler';
 import { createDb } from '@infrastructure/db/client';
 import { podcasts, episodes, assets } from '@infrastructure/db/schema';
 import { generateId } from '@infrastructure/utils/id';
 import { nowISO } from '@infrastructure/utils/date';
+import { checkEpisodeLimit, checkEpisodeDuration } from '@domain/plan/limits';
 
 const createEpisodeSchema = z.object({
   title: z.string().min(1).max(255),
@@ -98,6 +99,7 @@ episodeRoutes.post('/', async (c) => {
   const data = createEpisodeSchema.parse(body);
 
   const db = createDb(c.env.DB);
+  const userPlan = c.get('userPlan');
 
   // Verify podcast exists
   const podcast = await db.query.podcasts.findFirst({
@@ -106,6 +108,20 @@ episodeRoutes.post('/', async (c) => {
 
   if (!podcast) {
     throw new AppError(404, 'not_found', 'Podcast not found');
+  }
+
+  // Check episode limit
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(episodes)
+    .where(eq(episodes.podcastId, podcastId));
+  const currentCount = Number(countResult?.count ?? 0);
+
+  const limitCheck = checkEpisodeLimit(currentCount, userPlan);
+  if (!limitCheck.allowed) {
+    throw new AppError(403, 'plan_limit_exceeded', limitCheck.reason ?? 'Episode limit reached', [
+      { field: 'episodes', reason: 'limit_exceeded', current: limitCheck.current, limit: limitCheck.limit },
+    ]);
   }
 
   // Validate publish conditions
@@ -304,6 +320,7 @@ episodeRoutes.post('/:episodeId/audio', async (c) => {
   const data = attachAudioSchema.parse(body);
 
   const db = createDb(c.env.DB);
+  const userPlan = c.get('userPlan');
 
   const episode = await db.query.episodes.findFirst({
     where: and(eq(episodes.id, episodeId), eq(episodes.podcastId, podcastId)),
@@ -311,6 +328,16 @@ episodeRoutes.post('/:episodeId/audio', async (c) => {
 
   if (!episode) {
     throw new AppError(404, 'not_found', 'Episode not found');
+  }
+
+  // Check duration limit if provided
+  if (data.duration_seconds) {
+    const durationCheck = checkEpisodeDuration(data.duration_seconds, userPlan);
+    if (!durationCheck.allowed) {
+      throw new AppError(403, 'plan_limit_exceeded', durationCheck.reason ?? 'Duration limit exceeded', [
+        { field: 'duration_seconds', reason: 'limit_exceeded', current: durationCheck.current, limit: durationCheck.limit },
+      ]);
+    }
   }
 
   const asset = await db.query.assets.findFirst({

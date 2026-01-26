@@ -36,7 +36,7 @@ describe('RSS Helper Functions', () => {
     });
 
     it('should escape apostrophes', () => {
-      expect(escapeXml("It's"quite")).toBe('It&#39;s&quot;quite');
+      expect(escapeXml("It's\"quite")).toBe('It&#39;s&quot;quite');
     });
 
     it('should handle multiple special characters', () => {

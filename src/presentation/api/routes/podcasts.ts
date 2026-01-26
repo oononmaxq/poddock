@@ -14,10 +14,12 @@ import {
 } from '@infrastructure/db/schema';
 import { generateId } from '@infrastructure/utils/id';
 import { nowISO } from '@infrastructure/utils/date';
+import { checkPodcastLimit } from '@domain/plan/limits';
 import { episodeRoutes } from './episodes';
 import { distributionRoutes } from './distribution';
 import { feedTokenRoutes } from './feed-token';
 import { validateRoutes } from './validate';
+import { analyticsRoutes } from './analytics';
 
 // Helper for optional email that allows empty string
 const optionalEmail = z.preprocess(
@@ -56,23 +58,44 @@ const updatePodcastSchema = createPodcastSchema.partial();
 
 export const podcastRoutes = new Hono<AppEnv>();
 
+// Middleware to verify podcast ownership for nested routes
+podcastRoutes.use('/:podcastId/*', async (c, next) => {
+  const podcastId = c.req.param('podcastId');
+  const userId = c.get('userId');
+  const db = createDb(c.env.DB);
+
+  const podcast = await db.query.podcasts.findFirst({
+    where: and(eq(podcasts.id, podcastId), eq(podcasts.ownerId, userId)),
+  });
+
+  if (!podcast) {
+    throw new AppError(404, 'not_found', 'Podcast not found');
+  }
+
+  await next();
+});
+
 // Nested routes
 podcastRoutes.route('/:podcastId/episodes', episodeRoutes);
 podcastRoutes.route('/:podcastId/distribution-statuses', distributionRoutes);
 podcastRoutes.route('/:podcastId/feed-token', feedTokenRoutes);
 podcastRoutes.route('/:podcastId/rss', validateRoutes);
+podcastRoutes.route('/:podcastId/analytics', analyticsRoutes);
 
 // List podcasts
 podcastRoutes.get('/', async (c) => {
   const db = createDb(c.env.DB);
+  const userId = c.get('userId');
   const q = c.req.query('q');
   const visibility = c.req.query('visibility');
   const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
 
-  let query = db.select().from(podcasts);
-
-  // Note: Basic filtering, cursor pagination can be added later
-  const results = await query.limit(limit);
+  // Filter by owner
+  const results = await db
+    .select()
+    .from(podcasts)
+    .where(eq(podcasts.ownerId, userId))
+    .limit(limit);
 
   const items = await Promise.all(
     results.map(async (podcast) => {
@@ -128,6 +151,23 @@ podcastRoutes.post('/', async (c) => {
   const data = createPodcastSchema.parse(body);
 
   const db = createDb(c.env.DB);
+  const userId = c.get('userId');
+  const userPlan = c.get('userPlan');
+
+  // Check podcast limit (per user)
+  const [countResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(podcasts)
+    .where(eq(podcasts.ownerId, userId));
+  const currentCount = Number(countResult?.count ?? 0);
+
+  const limitCheck = checkPodcastLimit(currentCount, userPlan);
+  if (!limitCheck.allowed) {
+    throw new AppError(403, 'plan_limit_exceeded', limitCheck.reason ?? 'Podcast limit reached', [
+      { field: 'podcasts', reason: 'limit_exceeded', current: limitCheck.current, limit: limitCheck.limit },
+    ]);
+  }
+
   const now = nowISO();
   const podcastId = generateId();
   const feedTokenId = generateId();
@@ -144,6 +184,7 @@ podcastRoutes.post('/', async (c) => {
   // Create podcast
   await db.insert(podcasts).values({
     id: podcastId,
+    ownerId: userId,
     title: data.title,
     description: data.description,
     language: data.language,
@@ -193,10 +234,11 @@ podcastRoutes.post('/', async (c) => {
 // Get podcast
 podcastRoutes.get('/:podcastId', async (c) => {
   const podcastId = c.req.param('podcastId');
+  const userId = c.get('userId');
   const db = createDb(c.env.DB);
 
   const podcast = await db.query.podcasts.findFirst({
-    where: eq(podcasts.id, podcastId),
+    where: and(eq(podcasts.id, podcastId), eq(podcasts.ownerId, userId)),
   });
 
   if (!podcast) {
@@ -252,13 +294,14 @@ podcastRoutes.get('/:podcastId', async (c) => {
 // Update podcast
 podcastRoutes.patch('/:podcastId', async (c) => {
   const podcastId = c.req.param('podcastId');
+  const userId = c.get('userId');
   const body = await c.req.json();
   const data = updatePodcastSchema.parse(body);
 
   const db = createDb(c.env.DB);
 
   const existing = await db.query.podcasts.findFirst({
-    where: eq(podcasts.id, podcastId),
+    where: and(eq(podcasts.id, podcastId), eq(podcasts.ownerId, userId)),
   });
 
   if (!existing) {
@@ -338,10 +381,11 @@ podcastRoutes.patch('/:podcastId', async (c) => {
 // Delete podcast
 podcastRoutes.delete('/:podcastId', async (c) => {
   const podcastId = c.req.param('podcastId');
+  const userId = c.get('userId');
   const db = createDb(c.env.DB);
 
   const existing = await db.query.podcasts.findFirst({
-    where: eq(podcasts.id, podcastId),
+    where: and(eq(podcasts.id, podcastId), eq(podcasts.ownerId, userId)),
   });
 
   if (!existing) {

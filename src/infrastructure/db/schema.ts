@@ -4,7 +4,18 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 export const adminUsers = sqliteTable('admin_users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  passwordHash: text('password_hash'), // Optional: for legacy password auth
+  plan: text('plan', { enum: ['free', 'starter', 'pro'] }).notNull().default('free'),
+  createdAt: text('created_at').notNull(),
+});
+
+// MagicLink - マジックリンク認証用トークン
+export const magicLinks = sqliteTable('magic_links', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: text('expires_at').notNull(),
+  usedAt: text('used_at'),
   createdAt: text('created_at').notNull(),
 });
 
@@ -34,6 +45,9 @@ export const feedTokens = sqliteTable('feed_tokens', {
 // Podcast - 番組
 export const podcasts = sqliteTable('podcasts', {
   id: text('id').primaryKey(),
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => adminUsers.id),
   title: text('title').notNull(),
   description: text('description').notNull(),
   language: text('language').notNull(),
@@ -95,6 +109,32 @@ export const distributionStatuses = sqliteTable('distribution_statuses', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// PlayLog - 再生ログ（リダイレクト経由でカウント）
+export const playLogs = sqliteTable('play_logs', {
+  id: text('id').primaryKey(),
+  episodeId: text('episode_id')
+    .notNull()
+    .references(() => episodes.id, { onDelete: 'cascade' }),
+  podcastId: text('podcast_id')
+    .notNull()
+    .references(() => podcasts.id, { onDelete: 'cascade' }),
+  ipHash: text('ip_hash'), // プライバシー保護のためハッシュ化
+  userAgent: text('user_agent'),
+  country: text('country'),
+  playedAt: text('played_at').notNull(),
+});
+
+// MonthlyPlayStats - 月別再生統計（集計用）
+export const monthlyPlayStats = sqliteTable('monthly_play_stats', {
+  id: text('id').primaryKey(),
+  podcastId: text('podcast_id')
+    .notNull()
+    .references(() => podcasts.id, { onDelete: 'cascade' }),
+  yearMonth: text('year_month').notNull(), // '2026-01' format
+  playCount: integer('play_count').notNull().default(0),
+  updatedAt: text('updated_at').notNull(),
+});
+
 // Type exports for use in application layer
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type NewAdminUser = typeof adminUsers.$inferInsert;
@@ -116,3 +156,12 @@ export type NewDistributionTarget = typeof distributionTargets.$inferInsert;
 
 export type DistributionStatus = typeof distributionStatuses.$inferSelect;
 export type NewDistributionStatus = typeof distributionStatuses.$inferInsert;
+
+export type PlayLog = typeof playLogs.$inferSelect;
+export type NewPlayLog = typeof playLogs.$inferInsert;
+
+export type MonthlyPlayStats = typeof monthlyPlayStats.$inferSelect;
+export type NewMonthlyPlayStats = typeof monthlyPlayStats.$inferInsert;
+
+export type MagicLink = typeof magicLinks.$inferSelect;
+export type NewMagicLink = typeof magicLinks.$inferInsert;

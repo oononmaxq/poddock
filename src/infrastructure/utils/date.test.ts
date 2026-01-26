@@ -18,7 +18,7 @@ describe('formatRFC2822', () => {
   it('should handle single digit day', () => {
     const date = new Date('2026-01-05T12:30:45Z');
     const result = formatRFC2822(date);
-    expect(result).toBe('Sun, 05 Jan 2026 12:30:45 GMT');
+    expect(result).toBe('Mon, 05 Jan 2026 12:30:45 GMT');
   });
 
   it('should handle different months', () => {

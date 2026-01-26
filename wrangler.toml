@@ -2,11 +2,36 @@ name = "poddock"
 compatibility_date = "2024-12-01"
 pages_build_output_dir = "./dist"
 
+# ローカル開発用（デフォルト）
 [[d1_databases]]
+binding = "DB"
+database_name = "poddock-db"
+database_id = "local"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "poddock-bucket"
+
+# 環境変数（秘匿値は.dev.varsに記載）
+# RESEND_API_KEY, JWT_SECRET, etc. → .dev.vars
+
+# Staging環境
+[env.staging]
+[env.staging.vars]
+BASE_URL = "https://staging.poddock.io"
+R2_PUBLIC_URL = "https://staging.poddock.io"
+
+[[env.staging.d1_databases]]
 binding = "DB"
 database_name = "poddock-db-staging"
 database_id = "b63d5c3b-b84d-4ff0-bfbd-68fced192af8"
 
-[[r2_buckets]]
+[[env.staging.r2_buckets]]
 binding = "BUCKET"
 bucket_name = "poddock-bucket-staging"
+
+# Production環境
+[env.production]
+[env.production.vars]
+BASE_URL = "https://poddock.io"
+R2_PUBLIC_URL = "https://poddock.io"

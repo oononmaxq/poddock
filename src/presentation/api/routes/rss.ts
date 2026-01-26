@@ -100,6 +100,7 @@ rssRoutes.get('/:podcastId.xml', async (c) => {
     channelLink,
     lastBuildDate,
     pubDate,
+    baseUrl,
   });
 
   // Generate ETag from lastBuildDate
@@ -158,6 +159,7 @@ interface RssGenerateParams {
   channelLink: string;
   lastBuildDate: Date;
   pubDate: Date;
+  baseUrl: string;
 }
 
 function generateRssXml(params: RssGenerateParams): string {
@@ -168,6 +170,7 @@ function generateRssXml(params: RssGenerateParams): string {
     channelLink,
     lastBuildDate,
     pubDate,
+    baseUrl,
   } = params;
 
   const authorName = podcast.authorName || 'poddock';
@@ -180,13 +183,16 @@ function generateRssXml(params: RssGenerateParams): string {
         ? formatDuration(ep.episode.durationSeconds)
         : null;
 
+      // Use play redirect URL for tracking
+      const playUrl = `${baseUrl}/play/${ep.episode.id}`;
+
       return `
     <item>
       <title>${escapeXml(ep.episode.title)}</title>
       <description>${escapeXml(description)}</description>
       <pubDate>${formatRFC2822(new Date(ep.episode.publishedAt!))}</pubDate>
       <guid isPermaLink="false">poddock:episode:${ep.episode.id}</guid>
-      <enclosure url="${escapeXml(ep.audio!.publicUrl)}" length="${ep.audio!.byteSize}" type="${ep.audio!.contentType}" />
+      <enclosure url="${escapeXml(playUrl)}" length="${ep.audio!.byteSize}" type="${ep.audio!.contentType}" />
       <itunes:explicit>${podcast.explicit ? 'true' : 'false'}</itunes:explicit>${duration ? `
       <itunes:duration>${duration}</itunes:duration>` : ''}
     </item>`;

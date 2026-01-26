@@ -5,9 +5,9 @@ type Lang = keyof typeof translations;
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const [lang, setLang] = useState<Lang>(defaultLang);
 
   useEffect(() => {
@@ -39,16 +39,14 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('access_token', data.access_token);
-        window.location.href = '/podcasts';
+        setSent(true);
       } else {
         const data = await response.json();
         setError(data.message || t('login.error.failed'));
@@ -59,6 +57,39 @@ export function LoginForm() {
       setLoading(false);
     }
   };
+
+  // Email sent - show confirmation
+  if (sent) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <div className="card w-full max-w-md bg-base-100 shadow-xl">
+          <div className="card-body text-center">
+            <div className="flex justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 text-primary">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+            </div>
+            <h1 className="card-title text-2xl font-bold justify-center mb-2">{t('login.checkEmail.title')}</h1>
+            <p className="text-base-content/70 mb-4">
+              {t('login.checkEmail.description')}
+            </p>
+            <p className="text-sm text-base-content/50 mb-6">
+              <strong>{email}</strong>
+            </p>
+            <p className="text-sm text-base-content/50">
+              {t('login.checkEmail.spam')}
+            </p>
+            <button
+              className="btn btn-ghost mt-4"
+              onClick={() => { setSent(false); setEmail(''); }}
+            >
+              {t('login.checkEmail.tryAgain')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-base-200 flex items-center justify-center">
@@ -101,38 +132,21 @@ export function LoginForm() {
                 type="email"
                 id="email"
                 className="input input-bordered w-full"
-                placeholder="admin@example.com"
+                placeholder="you@example.com"
                 value={email}
                 onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
                 required
-              />
-            </div>
-
-            <div className="form-control">
-              <label className="label" htmlFor="password">
-                <span className="label-text">{t('login.password')}</span>
-              </label>
-              <input
-                type="password"
-                id="password"
-                className="input input-bordered w-full"
-                placeholder="........"
-                value={password}
-                onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
-                required
+                autoFocus
               />
             </div>
 
             <button type="submit" className="btn btn-primary w-full" disabled={loading}>
-              {loading ? <span className="loading loading-spinner loading-sm" /> : t('login.submit')}
+              {loading ? <span className="loading loading-spinner loading-sm" /> : t('login.sendLink')}
             </button>
           </form>
 
-          <div className="divider" />
-
-          <p className="text-center text-sm text-base-content/70">
-            {t('login.noAccount')}{' '}
-            <a href="/signup" className="link link-primary">{t('login.signup')}</a>
+          <p className="text-center text-sm text-base-content/50 mt-4">
+            {t('login.magicLinkHint')}
           </p>
         </div>
       </div>

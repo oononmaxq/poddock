@@ -177,14 +177,20 @@ export const translations = {
 
     // Login
     'login.title': 'ログイン',
-    'login.subtitle': 'ダッシュボードにログイン',
+    'login.subtitle': 'メールアドレスを入力してください',
     'login.email': 'メールアドレス',
     'login.password': 'パスワード',
     'login.submit': 'ログイン',
+    'login.sendLink': 'ログインリンクを送信',
+    'login.magicLinkHint': 'パスワード不要。メールでログインリンクをお送りします。',
     'login.error.network': 'ネットワークエラーが発生しました',
     'login.error.failed': 'ログインに失敗しました',
     'login.noAccount': 'アカウントをお持ちでない方',
     'login.signup': '新規登録',
+    'login.checkEmail.title': 'メールを確認してください',
+    'login.checkEmail.description': 'ログインリンクを送信しました。メールを確認してリンクをクリックしてください。',
+    'login.checkEmail.spam': '届かない場合は迷惑メールフォルダをご確認ください。',
+    'login.checkEmail.tryAgain': '別のメールアドレスで試す',
 
     // Signup
     'signup.title': '新規登録',
@@ -198,6 +204,25 @@ export const translations = {
     'signup.error.passwordMismatch': 'パスワードが一致しません',
     'signup.hasAccount': 'すでにアカウントをお持ちの方',
     'signup.login': 'ログイン',
+
+    // Analytics
+    'podcast.tabs.analytics': 'アナリティクス',
+    'analytics.upgradeRequired': 'アップグレードが必要です',
+    'analytics.upgradeDescription': 'アナリティクス機能はStarterプラン以上でご利用いただけます。',
+    'analytics.upgradePlan': 'プランをアップグレード',
+    'analytics.overview.title': '再生数概要',
+    'analytics.overview.totalPlays': '合計再生数',
+    'analytics.overview.currentMonth': '今月の再生数',
+    'analytics.overview.monthlyTrend': '月別推移',
+    'analytics.episodes.title': 'エピソード別再生数',
+    'analytics.countries.title': '国別分布',
+    'analytics.daily.title': '日別推移',
+    'analytics.period.7d': '過去7日',
+    'analytics.period.30d': '過去30日',
+    'analytics.period.90d': '過去90日',
+    'analytics.period.all': '全期間',
+    'analytics.noData': 'データがありません',
+    'analytics.plays': '再生',
   },
   en: {
     // Common
@@ -370,14 +395,20 @@ export const translations = {
 
     // Login
     'login.title': 'Login',
-    'login.subtitle': 'Login to dashboard',
+    'login.subtitle': 'Enter your email address',
     'login.email': 'Email',
     'login.password': 'Password',
     'login.submit': 'Login',
+    'login.sendLink': 'Send login link',
+    'login.magicLinkHint': 'No password needed. We\'ll send you a login link.',
     'login.error.network': 'Network error occurred',
     'login.error.failed': 'Login failed',
     'login.noAccount': "Don't have an account?",
     'login.signup': 'Sign up',
+    'login.checkEmail.title': 'Check your email',
+    'login.checkEmail.description': 'We sent you a login link. Check your email and click the link to log in.',
+    'login.checkEmail.spam': 'If you don\'t see it, check your spam folder.',
+    'login.checkEmail.tryAgain': 'Try a different email',
 
     // Signup
     'signup.title': 'Sign Up',
@@ -391,6 +422,25 @@ export const translations = {
     'signup.error.passwordMismatch': 'Passwords do not match',
     'signup.hasAccount': 'Already have an account?',
     'signup.login': 'Login',
+
+    // Analytics
+    'podcast.tabs.analytics': 'Analytics',
+    'analytics.upgradeRequired': 'Upgrade Required',
+    'analytics.upgradeDescription': 'Analytics is available on Starter plan and above.',
+    'analytics.upgradePlan': 'Upgrade Plan',
+    'analytics.overview.title': 'Play Overview',
+    'analytics.overview.totalPlays': 'Total Plays',
+    'analytics.overview.currentMonth': 'This Month',
+    'analytics.overview.monthlyTrend': 'Monthly Trend',
+    'analytics.episodes.title': 'Plays by Episode',
+    'analytics.countries.title': 'Country Distribution',
+    'analytics.daily.title': 'Daily Trend',
+    'analytics.period.7d': 'Last 7 days',
+    'analytics.period.30d': 'Last 30 days',
+    'analytics.period.90d': 'Last 90 days',
+    'analytics.period.all': 'All time',
+    'analytics.noData': 'No data available',
+    'analytics.plays': 'plays',
   },
 } as const;
 

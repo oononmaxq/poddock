@@ -6,11 +6,14 @@ export interface CloudflareBindings {
   JWT_SECRET: string;
   R2_PUBLIC_URL: string;
   BASE_URL: string;
+  RESEND_API_KEY: string;
+  RESEND_FROM: string; // e.g., "noreply@poddock.app"
 }
 
 export interface AppVariables {
   db: DrizzleDB;
   userId: string | null;
+  userPlan: 'free' | 'starter' | 'pro';
 }
 
 export interface AppEnv {

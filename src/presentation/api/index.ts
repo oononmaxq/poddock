@@ -5,6 +5,7 @@ import { podcastRoutes } from './routes/podcasts';
 import { assetRoutes } from './routes/assets';
 import { rssRoutes } from './routes/rss';
 import { publicRoutes } from './routes/public';
+import { playRoutes } from './routes/play';
 import { handleError } from './middleware/error-handler';
 import { authMiddleware } from './middleware/auth';
 import type { AppEnv } from './types';
@@ -21,6 +22,7 @@ api.use('*', cors());
 api.route('/auth', authRoutes);
 api.route('/rss', rssRoutes);
 api.route('/public', publicRoutes);
+api.route('/play', playRoutes);
 
 // Protected routes (auth required)
 api.use('/podcasts', authMiddleware);
