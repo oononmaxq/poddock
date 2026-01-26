@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { apiPost, apiPatch } from '../../hooks/useApi';
 import { Loading } from '../../components/Loading';
@@ -51,7 +50,6 @@ const THEME_COLORS = [
 ];
 
 export function PodcastForm({ podcastId }: PodcastFormProps) {
-  const { token } = useAuth();
   const { t, lang } = useI18n();
   const isEdit = !!podcastId;
   const basePath = lang === 'ja' ? '' : `/${lang}`;
@@ -79,7 +77,7 @@ export function PodcastForm({ podcastId }: PodcastFormProps) {
     if (!isEdit) return;
 
     fetch(`/api/podcasts/${podcastId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     })
       .then((res) => {
         if (!res.ok) {
@@ -113,7 +111,7 @@ export function PodcastForm({ podcastId }: PodcastFormProps) {
         console.error(err);
         alert('Failed to load podcast');
       });
-  }, [podcastId, token, isEdit]);
+  }, [podcastId, isEdit]);
 
   const handleCoverUpload = async (file: File) => {
     const validTypes = ['image/jpeg', 'image/png'];
@@ -131,7 +129,8 @@ export function PodcastForm({ podcastId }: PodcastFormProps) {
     try {
       const urlRes = await fetch('/api/assets/upload-url', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'image', file_name: file.name, content_type: file.type, byte_size: file.size }),
       });
       if (!urlRes.ok) throw new Error('Failed to get upload URL');
@@ -140,13 +139,14 @@ export function PodcastForm({ podcastId }: PodcastFormProps) {
 
       await fetch(upload.url, {
         method: upload.method,
-        headers: { 'Content-Type': file.type, Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': file.type },
         body: file,
       });
 
       await fetch(`/api/assets/${asset_id}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
 
@@ -181,11 +181,11 @@ export function PodcastForm({ podcastId }: PodcastFormProps) {
 
     try {
       if (isEdit) {
-        await apiPatch(`/api/podcasts/${podcastId}`, token, data);
+        await apiPatch(`/api/podcasts/${podcastId}`, data);
         showToastAfterRedirect(t('common.saved'));
         window.location.href = `${basePath}/podcasts/${podcastId}`;
       } else {
-        const result = await apiPost<{ id: string }>('/api/podcasts', token, data);
+        const result = await apiPost<{ id: string }>('/api/podcasts', data);
         showToastAfterRedirect(t('common.saved'));
         window.location.href = `${basePath}/podcasts/${result.id}`;
       }

@@ -1,16 +1,21 @@
-import { Hono } from 'hono';
-import { eq, and, desc, isNull } from 'drizzle-orm';
-import type { AppEnv } from '../types';
-import { createDb } from '@infrastructure/db/client';
-import { podcasts, episodes, assets, feedTokens } from '@infrastructure/db/schema';
-import { formatRFC2822 } from '@infrastructure/utils/date';
+import { Hono } from "hono";
+import { eq, and, desc, isNull } from "drizzle-orm";
+import type { AppEnv } from "../types";
+import { createDb } from "@infrastructure/db/client";
+import {
+  podcasts,
+  episodes,
+  assets,
+  feedTokens,
+} from "@infrastructure/db/schema";
+import { formatRFC2822 } from "@infrastructure/utils/date";
 
 export const rssRoutes = new Hono<AppEnv>();
 
 // Public/Private RSS feed
-rssRoutes.get('/:podcastId.xml', async (c) => {
-  const podcastId = c.req.param('podcastId');
-  const token = c.req.query('token');
+rssRoutes.get("/:podcastId.xml", async (c) => {
+  const podcastId = c.req.param("podcastId");
+  const token = c.req.query("token");
   const db = createDb(c.env.DB);
 
   const [podcast] = await db
@@ -24,7 +29,7 @@ rssRoutes.get('/:podcastId.xml', async (c) => {
   }
 
   // Access control
-  if (podcast.visibility === 'private') {
+  if (podcast.visibility === "private") {
     if (!token) {
       return c.notFound();
     }
@@ -37,8 +42,8 @@ rssRoutes.get('/:podcastId.xml', async (c) => {
         and(
           eq(feedTokens.podcastId, podcastId),
           eq(feedTokens.token, token),
-          isNull(feedTokens.revokedAt)
-        )
+          isNull(feedTokens.revokedAt),
+        ),
       )
       .limit(1);
 
@@ -56,10 +61,7 @@ rssRoutes.get('/:podcastId.xml', async (c) => {
     .from(episodes)
     .leftJoin(assets, eq(episodes.audioAssetId, assets.id))
     .where(
-      and(
-        eq(episodes.podcastId, podcastId),
-        eq(episodes.status, 'published')
-      )
+      and(eq(episodes.podcastId, podcastId), eq(episodes.status, "published")),
     )
     .orderBy(desc(episodes.publishedAt));
 
@@ -108,13 +110,13 @@ rssRoutes.get('/:podcastId.xml', async (c) => {
   const lastModified = lastBuildDate.toUTCString();
 
   // Check If-None-Match
-  const ifNoneMatch = c.req.header('If-None-Match');
+  const ifNoneMatch = c.req.header("If-None-Match");
   if (ifNoneMatch === etag) {
     return c.body(null, 304);
   }
 
   // Check If-Modified-Since
-  const ifModifiedSince = c.req.header('If-Modified-Since');
+  const ifModifiedSince = c.req.header("If-Modified-Since");
   if (ifModifiedSince) {
     const ifModifiedDate = new Date(ifModifiedSince);
     if (lastBuildDate <= ifModifiedDate) {
@@ -123,10 +125,10 @@ rssRoutes.get('/:podcastId.xml', async (c) => {
   }
 
   return c.body(xml, 200, {
-    'Content-Type': 'application/rss+xml; charset=utf-8',
+    "Content-Type": "application/rss+xml; charset=utf-8",
     ETag: etag,
-    'Last-Modified': lastModified,
-    'Cache-Control': 'public, max-age=300',
+    "Last-Modified": lastModified,
+    "Cache-Control": "public, max-age=300",
   });
 });
 
@@ -173,12 +175,13 @@ function generateRssXml(params: RssGenerateParams): string {
     baseUrl,
   } = params;
 
-  const authorName = podcast.authorName || 'poddock';
+  const authorName = podcast.authorName || "PODDOCK";
 
   const items = episodes
     .filter((ep) => ep.audio)
     .map((ep) => {
-      const description = ep.episode.description || 'Episode details on poddock';
+      const description =
+        ep.episode.description || "Episode details on PODDOCK";
       const duration = ep.episode.durationSeconds
         ? formatDuration(ep.episode.durationSeconds)
         : null;
@@ -191,13 +194,17 @@ function generateRssXml(params: RssGenerateParams): string {
       <title>${escapeXml(ep.episode.title)}</title>
       <description>${escapeXml(description)}</description>
       <pubDate>${formatRFC2822(new Date(ep.episode.publishedAt!))}</pubDate>
-      <guid isPermaLink="false">poddock:episode:${ep.episode.id}</guid>
+      <guid isPermaLink="false">PODDOCK:episode:${ep.episode.id}</guid>
       <enclosure url="${escapeXml(playUrl)}" length="${ep.audio!.byteSize}" type="${ep.audio!.contentType}" />
-      <itunes:explicit>${podcast.explicit ? 'true' : 'false'}</itunes:explicit>${duration ? `
-      <itunes:duration>${duration}</itunes:duration>` : ''}
+      <itunes:explicit>${podcast.explicit ? "true" : "false"}</itunes:explicit>${
+        duration
+          ? `
+      <itunes:duration>${duration}</itunes:duration>`
+          : ""
+      }
     </item>`;
     })
-    .join('');
+    .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
@@ -213,28 +220,36 @@ function generateRssXml(params: RssGenerateParams): string {
     <pubDate>${formatRFC2822(pubDate)}</pubDate>
     <itunes:author>${escapeXml(authorName)}</itunes:author>
     <itunes:summary>${escapeXml(podcast.description)}</itunes:summary>
-    <itunes:explicit>${podcast.explicit ? 'true' : 'false'}</itunes:explicit>
-    <itunes:category text="${escapeXml(podcast.category)}" />${coverImageUrl ? `
+    <itunes:explicit>${podcast.explicit ? "true" : "false"}</itunes:explicit>
+    <itunes:category text="${escapeXml(podcast.category)}" />${
+      coverImageUrl
+        ? `
     <itunes:image href="${escapeXml(coverImageUrl)}" />
     <image>
       <url>${escapeXml(coverImageUrl)}</url>
       <title>${escapeXml(podcast.title)}</title>
       <link>${escapeXml(channelLink)}</link>
-    </image>` : ''}${podcast.contactEmail ? `
+    </image>`
+        : ""
+    }${
+      podcast.contactEmail
+        ? `
     <itunes:owner>
       <itunes:email>${escapeXml(podcast.contactEmail)}</itunes:email>
-    </itunes:owner>` : ''}${items}
+    </itunes:owner>`
+        : ""
+    }${items}
   </channel>
 </rss>`;
 }
 
 function escapeXml(str: string): string {
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatDuration(seconds: number): string {
@@ -243,7 +258,7 @@ function formatDuration(seconds: number): string {
   const secs = seconds % 60;
 
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
 }

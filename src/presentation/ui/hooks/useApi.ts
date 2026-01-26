@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
-import { getAuthHeaders } from './useAuth';
 
 interface ApiState<T> {
   data: T | null;
@@ -7,7 +6,7 @@ interface ApiState<T> {
   error: string | null;
 }
 
-export function useApi<T>(url: string, token: string | null) {
+export function useApi<T>(url: string) {
   const [state, setState] = useState<ApiState<T>>({
     data: null,
     loading: true,
@@ -15,21 +14,14 @@ export function useApi<T>(url: string, token: string | null) {
   });
 
   const refetch = useCallback(async () => {
-    // トークンがない場合は即座にログイン画面へ
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
-
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response = await fetch(url, {
-        headers: getAuthHeaders(token),
+        credentials: 'include', // Send cookies
       });
 
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem('access_token');
           window.location.href = '/login';
           return;
         }
@@ -41,7 +33,7 @@ export function useApi<T>(url: string, token: string | null) {
     } catch (err) {
       setState({ data: null, loading: false, error: (err as Error).message });
     }
-  }, [url, token]);
+  }, [url]);
 
   useEffect(() => {
     refetch();
@@ -50,19 +42,18 @@ export function useApi<T>(url: string, token: string | null) {
   return { ...state, refetch };
 }
 
-export async function apiPost<T>(url: string, token: string | null, body: unknown): Promise<T> {
+export async function apiPost<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...getAuthHeaders(token),
     },
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('access_token');
       window.location.href = '/login';
     }
     const error = await response.json();
@@ -72,19 +63,18 @@ export async function apiPost<T>(url: string, token: string | null, body: unknow
   return response.json();
 }
 
-export async function apiPatch<T>(url: string, token: string | null, body: unknown): Promise<T> {
+export async function apiPatch<T>(url: string, body: unknown): Promise<T> {
   const response = await fetch(url, {
     method: 'PATCH',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...getAuthHeaders(token),
     },
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('access_token');
       window.location.href = '/login';
     }
     const error = await response.json();
@@ -94,15 +84,14 @@ export async function apiPatch<T>(url: string, token: string | null, body: unkno
   return response.json();
 }
 
-export async function apiDelete(url: string, token: string | null): Promise<void> {
+export async function apiDelete(url: string): Promise<void> {
   const response = await fetch(url, {
     method: 'DELETE',
-    headers: getAuthHeaders(token),
+    credentials: 'include',
   });
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem('access_token');
       window.location.href = '/login';
     }
     throw new Error('Delete failed');

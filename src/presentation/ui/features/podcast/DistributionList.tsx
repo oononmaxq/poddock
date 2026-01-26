@@ -1,6 +1,5 @@
 import { useState } from 'preact/hooks';
 import { useApi } from '../../hooks/useApi';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { Loading } from '../../components/Loading';
 import { showToast } from '../../components/Toast';
@@ -36,11 +35,9 @@ const PLATFORM_LOGOS: Record<string, string> = {
 };
 
 export function DistributionList({ podcastId }: DistributionListProps) {
-  const { token } = useAuth();
   const { t } = useI18n();
   const { data, loading, error, refetch } = useApi<DistributionListResponse>(
-    `/api/podcasts/${podcastId}/distribution-statuses`,
-    token
+    `/api/podcasts/${podcastId}/distribution-statuses`
   );
 
   if (loading) return <Loading />;
@@ -73,7 +70,6 @@ interface DistributionCardProps {
 
 function DistributionCard({ podcastId, item, onStatusChange }: DistributionCardProps) {
   const { t } = useI18n();
-  const { token } = useAuth();
   const [updating, setUpdating] = useState(false);
 
   const handleStatusChange = async (e: Event) => {
@@ -86,9 +82,9 @@ function DistributionCard({ podcastId, item, onStatusChange }: DistributionCardP
         `/api/podcasts/${podcastId}/distribution-statuses/${item.target_id}`,
         {
           method: 'PATCH',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ status: newStatus }),
         }

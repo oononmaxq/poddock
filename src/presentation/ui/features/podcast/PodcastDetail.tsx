@@ -2,7 +2,6 @@ import { Tabs } from '../../components/Tabs';
 import { VisibilityBadge } from '../../components/Badge';
 import { Loading } from '../../components/Loading';
 import { useApi } from '../../hooks/useApi';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { PodcastOverview } from './PodcastOverview';
 import { EpisodeList } from './EpisodeList';
@@ -28,12 +27,10 @@ interface PodcastDetailProps {
 }
 
 export function PodcastDetail({ podcastId }: PodcastDetailProps) {
-  const { token } = useAuth();
   const { t, lang } = useI18n();
   const basePath = lang === 'ja' ? '' : `/${lang}`;
   const { data: podcast, loading, error } = useApi<Podcast>(
-    `/api/podcasts/${podcastId}`,
-    token
+    `/api/podcasts/${podcastId}`
   );
 
   // Get initial tab from URL hash

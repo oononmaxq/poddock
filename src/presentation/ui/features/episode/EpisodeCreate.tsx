@@ -1,5 +1,4 @@
 import { useState, useRef } from 'preact/hooks';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { apiPost } from '../../hooks/useApi';
 import { showToast, showToastAfterRedirect } from '../../components/Toast';
@@ -9,7 +8,6 @@ interface EpisodeCreateProps {
 }
 
 export function EpisodeCreate({ podcastId }: EpisodeCreateProps) {
-  const { token } = useAuth();
   const { t, lang } = useI18n();
   const basePath = lang === 'ja' ? '' : `/${lang}`;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +60,8 @@ export function EpisodeCreate({ podcastId }: EpisodeCreateProps) {
     try {
       const urlRes = await fetch('/api/assets/upload-url', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'audio', file_name: file.name, content_type: file.type, byte_size: file.size }),
       });
       if (!urlRes.ok) throw new Error('Failed to get upload URL');
@@ -71,7 +70,7 @@ export function EpisodeCreate({ podcastId }: EpisodeCreateProps) {
 
       await fetch(upload.url, {
         method: upload.method,
-        headers: { 'Content-Type': file.type, Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': file.type },
         body: file,
       });
 
@@ -82,7 +81,8 @@ export function EpisodeCreate({ podcastId }: EpisodeCreateProps) {
 
       await fetch(`/api/assets/${asset_id}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
 
@@ -110,7 +110,7 @@ export function EpisodeCreate({ podcastId }: EpisodeCreateProps) {
     setSubmitting(true);
 
     try {
-      const episode = await apiPost<{ id: string }>(`/api/podcasts/${podcastId}/episodes`, token, {
+      const episode = await apiPost<{ id: string }>(`/api/podcasts/${podcastId}/episodes`, {
         title,
         description: description || null,
         status: 'draft',
@@ -123,7 +123,7 @@ export function EpisodeCreate({ podcastId }: EpisodeCreateProps) {
         if (durationSeconds !== null) {
           audioData.duration_seconds = durationSeconds;
         }
-        await apiPost(`/api/podcasts/${podcastId}/episodes/${episode.id}/audio`, token, audioData);
+        await apiPost(`/api/podcasts/${podcastId}/episodes/${episode.id}/audio`, audioData);
       }
 
       showToastAfterRedirect(t('common.saved'));

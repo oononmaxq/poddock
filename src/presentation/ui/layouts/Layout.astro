@@ -29,7 +29,7 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>{title} | poddock</title>
+    <title>{title} | PODDOCK</title>
     <ViewTransitions />
     <script is:inline>
       // Apply saved theme immediately to prevent flash
@@ -60,7 +60,7 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
             </label>
           </div>
           <div class="flex-1">
-            <a href="/" class="btn btn-ghost text-xl font-bold">poddock</a>
+            <a href="/" class="btn btn-ghost text-xl font-bold">PODDOCK</a>
           </div>
         </header>
 
@@ -75,7 +75,7 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
         <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-200 w-64 min-h-full flex flex-col">
           <div class="p-4 border-b border-base-300">
-            <a href={podcastsPath} class="text-xl font-bold">poddock</a>
+            <a href={podcastsPath} class="text-xl font-bold">PODDOCK</a>
           </div>
           <nav class="flex-1 p-4">
             <ul class="menu">
@@ -112,8 +112,12 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
               {t('nav.logout')}
             </button>
             <script>
-              document.getElementById('logout-btn')?.addEventListener('click', () => {
-                localStorage.removeItem('access_token');
+              document.getElementById('logout-btn')?.addEventListener('click', async () => {
+                try {
+                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                } catch {
+                  // Ignore errors
+                }
                 window.location.href = '/login';
               });
             </script>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'preact/hooks';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { useApi, apiPatch, apiDelete } from '../../hooks/useApi';
 import { Loading } from '../../components/Loading';
@@ -27,12 +26,10 @@ function formatBytes(bytes: number): string {
 }
 
 export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
-  const { token } = useAuth();
   const { t, lang } = useI18n();
   const basePath = lang === 'ja' ? '' : `/${lang}`;
   const { data: episode, loading, error } = useApi<Episode>(
-    `/api/podcasts/${podcastId}/episodes/${episodeId}`,
-    token
+    `/api/podcasts/${podcastId}/episodes/${episodeId}`
   );
 
   const [title, setTitle] = useState('');
@@ -90,7 +87,7 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
     }
 
     try {
-      await apiPatch(`/api/podcasts/${podcastId}/episodes/${episodeId}`, token, data);
+      await apiPatch(`/api/podcasts/${podcastId}/episodes/${episodeId}`, data);
       showToastAfterRedirect(t('common.saved'));
       window.location.href = `${basePath}/podcasts/${podcastId}#episodes`;
     } catch (err) {
@@ -104,7 +101,7 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
 
     setDeleting(true);
     try {
-      await apiDelete(`/api/podcasts/${podcastId}/episodes/${episodeId}`, token);
+      await apiDelete(`/api/podcasts/${podcastId}/episodes/${episodeId}`);
       showToastAfterRedirect(t('common.deleted'));
       window.location.href = `${basePath}/podcasts/${podcastId}#episodes`;
     } catch {

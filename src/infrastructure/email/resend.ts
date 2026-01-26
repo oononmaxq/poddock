@@ -13,14 +13,14 @@ interface ResendConfig {
 
 export async function sendEmail(
   config: ResendConfig,
-  params: SendEmailParams
+  params: SendEmailParams,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         from: config.from,
@@ -32,31 +32,34 @@ export async function sendEmail(
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('Resend API error:', error);
-      return { success: false, error: error.message || 'Failed to send email' };
+      console.error("Resend API error:", error);
+      return { success: false, error: error.message || "Failed to send email" };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Email send error:', error);
-    return { success: false, error: 'Failed to send email' };
+    console.error("Email send error:", error);
+    return { success: false, error: "Failed to send email" };
   }
 }
 
-export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'): { subject: string; html: string } {
-  const brandColor = '#6366f1';
+export function createMagicLinkEmail(
+  magicLink: string,
+  lang: "ja" | "en" = "ja",
+): { subject: string; html: string } {
+  const brandColor = "#6366f1";
   const year = new Date().getFullYear();
 
-  if (lang === 'ja') {
+  if (lang === "ja") {
     return {
-      subject: 'poddock へのログイン',
+      subject: "PODDOCK へのログイン",
       html: `
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>poddock ログイン</title>
+  <title>PODDOCK ログイン</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5;">
@@ -69,7 +72,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
-                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: ${brandColor};">poddock</h1>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: ${brandColor};">PODDOCK</h1>
                   </td>
                 </tr>
               </table>
@@ -83,7 +86,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
                 ログインリンク
               </h2>
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #52525b;">
-                下のボタンをクリックして poddock にログインしてください。このリンクは <strong>15分間</strong> 有効です。
+                下のボタンをクリックして PODDOCK にログインしてください。このリンクは <strong>15分間</strong> 有効です。
               </p>
 
               <!-- Button -->
@@ -121,7 +124,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
           <tr>
             <td style="padding: 24px 40px; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
-                &copy; ${year} poddock. All rights reserved.
+                &copy; ${year} PODDOCK. All rights reserved.
               </p>
             </td>
           </tr>
@@ -136,14 +139,14 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
   }
 
   return {
-    subject: 'Log in to poddock',
+    subject: "Log in to PODDOCK",
     html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>poddock Login</title>
+  <title>PODDOCK Login</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5;">
@@ -156,7 +159,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
-                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: ${brandColor};">poddock</h1>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: ${brandColor};">PODDOCK</h1>
                   </td>
                 </tr>
               </table>
@@ -170,7 +173,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
                 Your login link
               </h2>
               <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.6; color: #52525b;">
-                Click the button below to log in to poddock. This link is valid for <strong>15 minutes</strong>.
+                Click the button below to log in to PODDOCK. This link is valid for <strong>15 minutes</strong>.
               </p>
 
               <!-- Button -->
@@ -178,7 +181,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
                 <tr>
                   <td style="border-radius: 8px; background-color: ${brandColor};">
                     <a href="${magicLink}" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none;">
-                      Log in to poddock
+                      Log in to PODDOCK
                     </a>
                   </td>
                 </tr>
@@ -208,7 +211,7 @@ export function createMagicLinkEmail(magicLink: string, lang: 'ja' | 'en' = 'ja'
           <tr>
             <td style="padding: 24px 40px; text-align: center;">
               <p style="margin: 0; font-size: 12px; color: #a1a1aa;">
-                &copy; ${year} poddock. All rights reserved.
+                &copy; ${year} PODDOCK. All rights reserved.
               </p>
             </td>
           </tr>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'preact/hooks';
-import { useAuth, getAuthHeaders } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { Loading } from '../../components/Loading';
 import { PlanGate } from './PlanGate';
@@ -78,7 +77,6 @@ const COUNTRY_NAMES: Record<string, string> = {
 };
 
 export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
-  const { token } = useAuth();
   const { t } = useI18n();
   const [period, setPeriod] = useState<Period>('30d');
   const [overview, setOverview] = useState<OverviewData | null>(null);
@@ -91,20 +89,17 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
 
   useEffect(() => {
     async function fetchData() {
-      if (!token) return;
-
       setLoading(true);
       setError(null);
 
       try {
-        const headers = getAuthHeaders(token);
         const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
 
         const [overviewRes, episodesRes, countriesRes, dailyRes] = await Promise.all([
-          fetch(`/api/podcasts/${podcastId}/analytics/overview?months=6`, { headers }),
-          fetch(`/api/podcasts/${podcastId}/analytics/episodes?period=${period}&limit=10`, { headers }),
-          fetch(`/api/podcasts/${podcastId}/analytics/countries?period=${period}&limit=10`, { headers }),
-          fetch(`/api/podcasts/${podcastId}/analytics/daily?days=${days}`, { headers }),
+          fetch(`/api/podcasts/${podcastId}/analytics/overview?months=6`, { credentials: 'include' }),
+          fetch(`/api/podcasts/${podcastId}/analytics/episodes?period=${period}&limit=10`, { credentials: 'include' }),
+          fetch(`/api/podcasts/${podcastId}/analytics/countries?period=${period}&limit=10`, { credentials: 'include' }),
+          fetch(`/api/podcasts/${podcastId}/analytics/daily?days=${days}`, { credentials: 'include' }),
         ]);
 
         // Check if user needs to upgrade (403 means plan restriction)
@@ -137,7 +132,7 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
     }
 
     fetchData();
-  }, [podcastId, token, period]);
+  }, [podcastId, period]);
 
   if (loading) return <Loading />;
   if (needsUpgrade) return <PlanGate />;
