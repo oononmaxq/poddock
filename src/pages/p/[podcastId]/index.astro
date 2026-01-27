@@ -58,6 +58,9 @@ const episodes = episodeList;
 
 const themeColor = podcast.theme_color || '#6366f1';
 const themeMode = podcast.theme_mode || 'light';
+const baseUrl = Astro.locals.runtime.env.BASE_URL || 'https://poddock.io';
+const pageUrl = `${baseUrl}/p/${podcastId}`;
+const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
 ---
 
 <!doctype html>
@@ -69,6 +72,20 @@ const themeMode = podcast.theme_mode || 'light';
     <title>{podcast.title}</title>
     <meta name="description" content={podcast.description} />
     <link rel="alternate" type="application/rss+xml" title={podcast.title} href={`/rss/${podcastId}.xml`} />
+
+    <!-- OGP -->
+    <meta property="og:title" content={podcast.title} />
+    <meta property="og:description" content={podcast.description || ''} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PODDOCK" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={podcast.title} />
+    <meta name="twitter:description" content={podcast.description || ''} />
+    <meta name="twitter:image" content={ogImage} />
     <style define:vars={{ themeColor }}>
       .theme-primary { color: var(--themeColor); }
       .theme-bg { background-color: var(--themeColor); }

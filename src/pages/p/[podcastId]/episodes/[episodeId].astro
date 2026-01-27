@@ -78,6 +78,10 @@ const episode = { ...episodeData, audio };
 const themeColor = podcast.theme_color || '#6366f1';
 const themeMode = podcast.theme_mode || 'light';
 const locale = podcast.language === 'ja' ? 'ja-JP' : 'en-US';
+const baseUrl = Astro.locals.runtime.env.BASE_URL || 'https://poddock.io';
+const pageUrl = `${baseUrl}/p/${podcastId}/episodes/${episodeId}`;
+const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
+const ogDescription = episode.description || podcast.description || '';
 ---
 
 <!doctype html>
@@ -87,7 +91,25 @@ const locale = podcast.language === 'ja' ? 'ja-JP' : 'en-US';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{episode.title} | {podcast.title}</title>
-    <meta name="description" content={episode.description || podcast.description} />
+    <meta name="description" content={ogDescription} />
+
+    <!-- OGP -->
+    <meta property="og:title" content={`${episode.title} | ${podcast.title}`} />
+    <meta property="og:description" content={ogDescription} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="PODDOCK" />
+    {episode.audio?.public_url && (
+      <meta property="og:audio" content={episode.audio.public_url} />
+    )}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${episode.title} | ${podcast.title}`} />
+    <meta name="twitter:description" content={ogDescription} />
+    <meta name="twitter:image" content={ogImage} />
+
     <style define:vars={{ themeColor }}>
       .theme-primary { color: var(--themeColor); }
       .theme-bg { background-color: var(--themeColor); }
