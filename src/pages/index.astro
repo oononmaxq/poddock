@@ -214,6 +214,54 @@ const lang = getLangFromUrl(Astro.url);
         opacity: 0;
         animation: hero-waveform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards;
       }
+
+      /* Section title icons */
+      @keyframes icon-bounce {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-4px) rotate(-5deg); }
+        75% { transform: translateY(-2px) rotate(5deg); }
+      }
+
+      @keyframes icon-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.15); opacity: 0.8; }
+      }
+
+      @keyframes icon-shake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-10deg); }
+        75% { transform: rotate(10deg); }
+      }
+
+      @keyframes icon-float {
+        0%, 100% { transform: translateY(0) rotate(-3deg); }
+        50% { transform: translateY(-6px) rotate(3deg); }
+      }
+
+      .section-icon {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 0.25rem;
+        vertical-align: baseline;
+        position: relative;
+        top: 0.15em;
+      }
+
+      .icon-bounce {
+        animation: icon-bounce 2s ease-in-out infinite;
+      }
+
+      .icon-pulse {
+        animation: icon-pulse 2s ease-in-out infinite;
+      }
+
+      .icon-shake {
+        animation: icon-shake 2.5s ease-in-out infinite;
+      }
+
+      .icon-float {
+        animation: icon-float 3s ease-in-out infinite;
+      }
     </style>
   </head>
   <body class="min-h-screen bg-base-100">
@@ -237,7 +285,7 @@ const lang = getLangFromUrl(Astro.url);
       <img src="/top_hero_2.png" alt="" class="absolute bottom-0 right-0 w-1/5 max-w-md object-contain pointer-events-none" />
       <div class="relative z-10 px-2">
         <h1 class="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight hero-title">
-          番組運営を、<br class="sm:hidden" />もっとシンプルに<svg class="inline-block w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 ml-1 align-middle text-primary hero-waveform" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="9" width="2" height="6" rx="1" /><rect x="6" y="6" width="2" height="12" rx="1" /><rect x="10" y="4" width="2" height="16" rx="1" /><rect x="14" y="7" width="2" height="10" rx="1" /><rect x="18" y="10" width="2" height="4" rx="1" /></svg>
+          番組運営を、<br class="sm:hidden" />もっとシンプルに<svg class="inline-block w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 ml-1 text-primary hero-waveform" style="vertical-align: baseline; position: relative; top: 0.1em;" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="9" width="2" height="6" rx="1" /><rect x="6" y="6" width="2" height="12" rx="1" /><rect x="10" y="4" width="2" height="16" rx="1" /><rect x="14" y="7" width="2" height="10" rx="1" /><rect x="18" y="10" width="2" height="4" rx="1" /></svg>
         </h1>
         <p class="text-base sm:text-xl text-base-content/70 mb-8 max-w-2xl mx-auto leading-relaxed hero-subtitle">
           Spotify、Apple Podcasts、<br class="sm:hidden" />Amazon Music、YouTube Music など<br class="hidden sm:inline" />
@@ -265,7 +313,7 @@ const lang = getLangFromUrl(Astro.url);
         <!-- Problem Statement -->
         <div class="text-center mb-8 sm:mb-12">
           <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 leading-tight animate-fade-up">
-            リスナーに届けるなら、<br class="sm:hidden" />全部に配信したい。
+            リスナーに届けるなら、<br class="sm:hidden" />全部に配信したい<span class="section-icon icon-bounce"><svg class="w-7 h-7 sm:w-9 sm:h-9 lg:w-10 lg:h-10 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg></span>
           </h2>
           <p class="text-base sm:text-xl text-base-content/70 animate-fade-up" data-delay="200">でも、それぞれ管理するのは大変...</p>
         </div>
@@ -316,7 +364,7 @@ const lang = getLangFromUrl(Astro.url);
     <!-- Features -->
     <section class="min-h-screen flex flex-col justify-center py-12 sm:py-16 px-4 sm:px-6 lg:px-12 bg-base-100">
       <div class="max-w-6xl mx-auto w-full">
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">PODDOCKの特徴</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">PODDOCKの特徴<span class="section-icon icon-pulse"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="currentColor" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg></span></h2>
         <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           <div class="card bg-base-100 fade-in-card">
             <div class="card-body p-4 sm:p-6">
@@ -393,7 +441,7 @@ const lang = getLangFromUrl(Astro.url);
     <section class="min-h-screen flex flex-col justify-center py-12 sm:py-20 px-4 sm:px-6 lg:px-12 bg-base-200">
       <div class="max-w-6xl mx-auto w-full">
         <div class="text-center mb-8 sm:mb-12">
-          <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">料金プラン</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">料金プラン<span class="section-icon icon-float"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" /></svg></span></h2>
           <p class="text-base sm:text-xl text-base-content/70 mb-6 sm:mb-8">あなたのポッドキャストに<br class="sm:hidden" />最適なプランを選択</p>
 
           <!-- Monthly/Yearly Toggle -->
@@ -531,7 +579,7 @@ const lang = getLangFromUrl(Astro.url);
     <!-- FAQ -->
     <section class="min-h-screen py-12 sm:py-20 px-4 sm:px-6 lg:px-12 bg-base-100 flex items-center">
       <div class="max-w-3xl mx-auto w-full">
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">よくある質問</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">よくある質問<span class="section-icon icon-shake"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg></span></h2>
 
         <div class="space-y-3 sm:space-y-4">
           <div class="collapse collapse-arrow bg-base-100">
@@ -579,7 +627,7 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- CTA -->
     <section class="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 text-center bg-base-200">
-      <h2 class="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">PODDOCKで今すぐ始めよう!</h2>
+      <h2 class="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">PODDOCKで今すぐ始めよう<span class="section-icon icon-bounce"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg></span></h2>
       <a href="/login" class="btn btn-primary btn-md sm:btn-lg">無料で始める</a>
     </section>
 

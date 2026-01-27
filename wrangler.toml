@@ -34,7 +34,18 @@ binding = "BUCKET"
 bucket_name = "poddock-bucket-staging"
 
 # Production環境
+# Secretsは Cloudflare Dashboard で設定:
+#   JWT_SECRET, RESEND_API_KEY, RESEND_FROM
 [env.production]
 [env.production.vars]
 BASE_URL = "https://poddock.io"
 R2_PUBLIC_URL = "https://poddock.io"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "poddock-db-production"
+database_id = "ce382f1b-00a4-403b-952c-d3b7d4685b47"
+
+[[env.production.r2_buckets]]
+binding = "BUCKET"
+bucket_name = "poddock-bucket-production"
