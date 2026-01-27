@@ -8,13 +8,11 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if PR is from staging
-        if: github.head_ref != 'staging'
+      - name: Verify PR is from staging branch
         run: |
-          echo "Error: PRs to main must come from staging branch"
-          echo "Current source branch: ${{ github.head_ref }}"
-          exit 1
-
-      - name: Source branch OK
-        if: github.head_ref == 'staging'
-        run: echo "OK: PR is from staging branch"
+          if [ "${{ github.head_ref }}" != "staging" ]; then
+            echo "Error: PRs to main must come from staging branch"
+            echo "Current source branch: ${{ github.head_ref }}"
+            exit 1
+          fi
+          echo "OK: PR is from staging branch"
