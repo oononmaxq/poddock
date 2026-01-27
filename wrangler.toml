@@ -16,6 +16,9 @@ bucket_name = "poddock-bucket"
 # RESEND_API_KEY, JWT_SECRET, etc. → .dev.vars
 
 # Preview環境（staging ブランチ等、非本番ブランチ用）
+# Basic認証の設定は Cloudflare Dashboard で環境変数として設定:
+#   BASIC_AUTH_USER=<username>
+#   BASIC_AUTH_PASS=<password>
 [env.preview]
 [env.preview.vars]
 BASE_URL = "https://staging.poddock.pages.dev"

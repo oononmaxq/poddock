@@ -8,6 +8,9 @@ export interface CloudflareBindings {
   BASE_URL: string;
   RESEND_API_KEY: string;
   RESEND_FROM: string; // e.g., "noreply@PODDOCK.app"
+  // Basic auth for staging (optional)
+  BASIC_AUTH_USER?: string;
+  BASIC_AUTH_PASS?: string;
 }
 
 export interface AppVariables {
