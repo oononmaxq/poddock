@@ -1,18 +1,18 @@
-import { Hono } from 'hono';
-import { z } from 'zod';
-import { eq } from 'drizzle-orm';
-import type { AppEnv } from '../types';
-import { AppError } from '../middleware/error-handler';
-import { createDb } from '@infrastructure/db/client';
-import { assets } from '@infrastructure/db/schema';
-import { generateId } from '@infrastructure/utils/id';
-import { nowISO } from '@infrastructure/utils/date';
+import { Hono } from "hono";
+import { z } from "zod";
+import { eq } from "drizzle-orm";
+import type { AppEnv } from "../types";
+import { AppError } from "../middleware/error-handler";
+import { createDb } from "@infrastructure/db/client";
+import { assets } from "@infrastructure/db/schema";
+import { generateId } from "@infrastructure/utils/id";
+import { nowISO } from "@infrastructure/utils/date";
 
-const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/wav'];
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/mp4", "audio/wav"];
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const uploadUrlSchema = z.object({
-  type: z.enum(['audio', 'image']),
+  type: z.enum(["audio", "image"]),
   file_name: z.string().min(1),
   content_type: z.string().min(1),
   byte_size: z.number().positive(),
@@ -25,21 +25,30 @@ const completeUploadSchema = z.object({
 export const assetRoutes = new Hono<AppEnv>();
 
 // Request upload URL
-assetRoutes.post('/upload-url', async (c) => {
+assetRoutes.post("/upload-url", async (c) => {
   const body = await c.req.json();
   const data = uploadUrlSchema.parse(body);
 
   // Validate content type
-  const allowedTypes = data.type === 'audio' ? ALLOWED_AUDIO_TYPES : ALLOWED_IMAGE_TYPES;
+  const allowedTypes =
+    data.type === "audio" ? ALLOWED_AUDIO_TYPES : ALLOWED_IMAGE_TYPES;
   if (!allowedTypes.includes(data.content_type)) {
-    throw new AppError(400, 'invalid_content_type', `Content type must be one of: ${allowedTypes.join(', ')}`, [
-      { field: 'content_type', reason: `must be one of: ${allowedTypes.join(', ')}` },
-    ]);
+    throw new AppError(
+      400,
+      "invalid_content_type",
+      `Content type must be one of: ${allowedTypes.join(", ")}`,
+      [
+        {
+          field: "content_type",
+          reason: `must be one of: ${allowedTypes.join(", ")}`,
+        },
+      ],
+    );
   }
 
   const assetId = generateId();
-  const ext = data.file_name.split('.').pop() || '';
-  const storageKey = `${data.type}/${assetId}${ext ? '.' + ext : ''}`;
+  const ext = data.file_name.split(".").pop() || "";
+  const storageKey = `${data.type}/${assetId}${ext ? "." + ext : ""}`;
 
   // Create presigned URL for R2
   const bucket = c.env.BUCKET;
@@ -59,8 +68,8 @@ assetRoutes.post('/upload-url', async (c) => {
   await db.insert(assets).values({
     id: assetId,
     type: data.type,
-    storageProvider: 'r2',
-    storageBucket: 'poddock-bucket',
+    storageProvider: "r2",
+    storageBucket: "PODDOCK-bucket",
     storageKey,
     publicUrl: `${r2PublicUrl}/${storageKey}`,
     contentType: data.content_type,
@@ -81,21 +90,21 @@ assetRoutes.post('/upload-url', async (c) => {
     {
       asset_id: assetId,
       upload: {
-        method: 'PUT',
+        method: "PUT",
         url: `/api/assets/${assetId}/upload`,
         headers: {
-          'Content-Type': data.content_type,
+          "Content-Type": data.content_type,
         },
         expires_in: expiresIn,
       },
     },
-    201
+    201,
   );
 });
 
 // Direct upload to worker (proxy to R2)
-assetRoutes.put('/:assetId/upload', async (c) => {
-  const assetId = c.req.param('assetId');
+assetRoutes.put("/:assetId/upload", async (c) => {
+  const assetId = c.req.param("assetId");
   const db = createDb(c.env.DB);
 
   const asset = await db.query.assets.findFirst({
@@ -103,7 +112,7 @@ assetRoutes.put('/:assetId/upload', async (c) => {
   });
 
   if (!asset) {
-    throw new AppError(404, 'not_found', 'Asset not found');
+    throw new AppError(404, "not_found", "Asset not found");
   }
 
   const body = await c.req.arrayBuffer();
@@ -115,12 +124,12 @@ assetRoutes.put('/:assetId/upload', async (c) => {
     },
   });
 
-  return c.json({ message: 'Upload successful' });
+  return c.json({ message: "Upload successful" });
 });
 
 // Complete upload
-assetRoutes.post('/:assetId/complete', async (c) => {
-  const assetId = c.req.param('assetId');
+assetRoutes.post("/:assetId/complete", async (c) => {
+  const assetId = c.req.param("assetId");
   const body = await c.req.json();
   const data = completeUploadSchema.parse(body);
 
@@ -131,7 +140,7 @@ assetRoutes.post('/:assetId/complete', async (c) => {
   });
 
   if (!asset) {
-    throw new AppError(404, 'not_found', 'Asset not found');
+    throw new AppError(404, "not_found", "Asset not found");
   }
 
   // Verify the file exists in R2
@@ -139,7 +148,7 @@ assetRoutes.post('/:assetId/complete', async (c) => {
   const object = await bucket.head(asset.storageKey);
 
   if (!object) {
-    throw new AppError(400, 'upload_not_found', 'Upload not found in storage');
+    throw new AppError(400, "upload_not_found", "Upload not found in storage");
   }
 
   // Update checksum if provided

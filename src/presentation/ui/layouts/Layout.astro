@@ -19,6 +19,7 @@ const isActive = (path: string) => {
 };
 
 const podcastsPath = lang === 'ja' ? '/podcasts' : `/${lang}/podcasts`;
+const analyticsPath = lang === 'ja' ? '/analytics' : `/${lang}/analytics`;
 const helpPath = lang === 'ja' ? '/help/distribution' : `/${lang}/help/distribution`;
 const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
 ---
@@ -29,7 +30,7 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>{title} | poddock</title>
+    <title>{title} | PODDOCK</title>
     <ViewTransitions />
     <script is:inline>
       // Apply saved theme immediately to prevent flash
@@ -60,7 +61,7 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
             </label>
           </div>
           <div class="flex-1">
-            <a href="/" class="btn btn-ghost text-xl font-bold">poddock</a>
+            <a href="/" class="btn btn-ghost text-xl font-bold">PODDOCK</a>
           </div>
         </header>
 
@@ -75,16 +76,24 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
         <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
         <aside class="bg-base-200 w-64 min-h-full flex flex-col">
           <div class="p-4 border-b border-base-300">
-            <a href={podcastsPath} class="text-xl font-bold">poddock</a>
+            <a href={podcastsPath} class="text-xl font-bold">PODDOCK</a>
           </div>
           <nav class="flex-1 p-4">
             <ul class="menu">
               <li>
-                <a href={podcastsPath} class:list={["flex items-center gap-2", { active: isActive(podcastsPath) && !pathname.includes('/help') && !pathname.includes('/settings') }]}>
+                <a href={podcastsPath} class:list={["flex items-center gap-2", { active: isActive(podcastsPath) && !pathname.includes('/analytics') && !pathname.includes('/help') && !pathname.includes('/settings') }]}>
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                   </svg>
                   {t('nav.dashboard')}
+                </a>
+              </li>
+              <li>
+                <a href={analyticsPath} class:list={["flex items-center gap-2", { active: isActive(analyticsPath) }]}>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  {t('nav.analytics')}
                 </a>
               </li>
               <li>
@@ -112,8 +121,12 @@ const settingsPath = lang === 'ja' ? '/settings' : `/${lang}/settings`;
               {t('nav.logout')}
             </button>
             <script>
-              document.getElementById('logout-btn')?.addEventListener('click', () => {
-                localStorage.removeItem('access_token');
+              document.getElementById('logout-btn')?.addEventListener('click', async () => {
+                try {
+                  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                } catch {
+                  // Ignore errors
+                }
                 window.location.href = '/login';
               });
             </script>

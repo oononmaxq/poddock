@@ -23,16 +23,18 @@ export function Tabs({ tabs, defaultTab, onTabChange }: TabsProps) {
 
   return (
     <div>
-      <div className="tabs tabs-boxed mb-6">
-        {tabs.map((tab) => (
-          <a
-            key={tab.id}
-            className={`tab ${activeTab === tab.id ? 'tab-active' : ''}`}
-            onClick={() => handleTabClick(tab.id)}
-          >
-            {tab.label}
-          </a>
-        ))}
+      <div className="overflow-x-auto -mx-2 px-2 mb-6">
+        <div className="tabs tabs-boxed whitespace-nowrap min-w-max">
+          {tabs.map((tab) => (
+            <a
+              key={tab.id}
+              className={`tab tab-sm sm:tab-md ${activeTab === tab.id ? 'tab-active' : ''}`}
+              onClick={() => handleTabClick(tab.id)}
+            >
+              {tab.label}
+            </a>
+          ))}
+        </div>
       </div>
       <div>
         {tabs.map((tab) => (

@@ -168,19 +168,31 @@ authRoutes.get('/verify', async (c) => {
   // Issue JWT
   const accessToken = await createToken(user.id, user.email, c.env.JWT_SECRET);
 
+  // Set HttpOnly cookie
+  const isProduction = !c.env.BASE_URL.includes('localhost');
+  const cookieOptions = [
+    `access_token=${accessToken}`,
+    'HttpOnly',
+    'SameSite=Strict',
+    'Path=/',
+    'Max-Age=86400',
+  ];
+  if (isProduction) {
+    cookieOptions.push('Secure');
+  }
+  c.header('Set-Cookie', cookieOptions.join('; '));
+
   // Redirect to dashboard with token (or return JSON for API use)
   const acceptHeader = c.req.header('Accept') || '';
   if (acceptHeader.includes('application/json')) {
     return c.json({
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_in: 3600,
+      message: 'Login successful',
+      expires_in: 86400,
     });
   }
 
-  // Redirect to a page that stores the token and redirects to dashboard
-  const baseUrl = c.env.BASE_URL;
-  return c.redirect(`${baseUrl}/auth/callback?token=${accessToken}`);
+  // Redirect directly to dashboard
+  return c.redirect('/podcasts');
 });
 
 // Legacy login endpoint (for backward compatibility during migration)
@@ -189,7 +201,13 @@ authRoutes.post('/login', async (c) => {
 });
 
 authRoutes.post('/logout', async (c) => {
-  // JWT is stateless, client should discard the token
-  // Redirect to login page for form submissions
+  // Clear the HttpOnly cookie by setting it to expire immediately
+  c.header('Set-Cookie', 'access_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
+  return c.json({ message: 'Logged out' });
+});
+
+authRoutes.get('/logout', async (c) => {
+  // Clear the HttpOnly cookie and redirect to login
+  c.header('Set-Cookie', 'access_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
   return c.redirect('/login');
 });

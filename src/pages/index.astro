@@ -1,5 +1,6 @@
 ---
 import { getLangFromUrl } from '../i18n/translations';
+import Footer from '../components/Footer.astro';
 
 const lang = getLangFromUrl(Astro.url);
 ---
@@ -10,14 +11,14 @@ const lang = getLangFromUrl(Astro.url);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>poddock - ポッドキャストをどこにでも配信</title>
+    <title>PODDOCK - ポッドキャストをどこにでも配信</title>
     <script is:inline>
       const savedTheme = localStorage.getItem('theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-      body { font-family: 'Inter', sans-serif; }
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+      body { font-family: 'Space Grotesk', 'Zen Kaku Gothic New', sans-serif; }
 
       /* Smooth wave animation */
       .wave-bg {
@@ -59,192 +60,400 @@ const lang = getLangFromUrl(Astro.url);
         opacity: 1;
         transform: translateY(0);
       }
+
+      /* Animate section elements */
+      .animate-fade-up {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+      }
+      .animate-fade-up.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Platform logos animation */
+      .animate-platform {
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      }
+      .animate-platform.visible {
+        opacity: 0.6;
+        transform: scale(1);
+      }
+
+      /* Solution card slide-in */
+      .animate-slide-up {
+        opacity: 0;
+        transform: translateY(60px);
+        transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+      }
+      .animate-slide-up.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Step items animation */
+      .animate-step {
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      }
+      .animate-step.visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* Hero animations - run on page load */
+      @keyframes hero-title {
+        0% {
+          opacity: 0;
+          transform: translateY(40px) scale(0.95);
+          filter: blur(10px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: blur(0);
+        }
+      }
+
+      @keyframes hero-subtitle {
+        0% {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes hero-cta {
+        0% {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes hero-badge {
+        0% {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .hero-title {
+        animation: hero-title 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .hero-subtitle {
+        opacity: 0;
+        animation: hero-subtitle 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+      }
+
+      .hero-cta {
+        opacity: 0;
+        animation: hero-cta 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards;
+      }
+
+      .hero-cta:hover {
+        opacity: 1;
+        animation: float 2s ease-in-out infinite;
+      }
+
+      .hero-badge {
+        opacity: 0;
+      }
+      .hero-badge-1 { animation: hero-badge 0.5s ease-out 0.9s forwards; }
+      .hero-badge-2 { animation: hero-badge 0.5s ease-out 1.0s forwards; }
+      .hero-badge-3 { animation: hero-badge 0.5s ease-out 1.1s forwards; }
+      .hero-badge-4 { animation: hero-badge 0.5s ease-out 1.2s forwards; }
+
+      .hero-label {
+        opacity: 0;
+        animation: hero-subtitle 0.5s ease-out 0.8s forwards;
+      }
+
+      @keyframes hero-waveform {
+        0% {
+          opacity: 0;
+          transform: scale(0) rotate(-10deg);
+        }
+        70% {
+          transform: scale(1.2) rotate(5deg);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) rotate(0deg);
+        }
+      }
+
+      .hero-waveform {
+        opacity: 0;
+        animation: hero-waveform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards;
+      }
+
+      /* Section title icons */
+      @keyframes icon-bounce {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        25% { transform: translateY(-4px) rotate(-5deg); }
+        75% { transform: translateY(-2px) rotate(5deg); }
+      }
+
+      @keyframes icon-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.15); opacity: 0.8; }
+      }
+
+      @keyframes icon-shake {
+        0%, 100% { transform: rotate(0deg); }
+        25% { transform: rotate(-10deg); }
+        75% { transform: rotate(10deg); }
+      }
+
+      @keyframes icon-float {
+        0%, 100% { transform: translateY(0) rotate(-3deg); }
+        50% { transform: translateY(-6px) rotate(3deg); }
+      }
+
+      .section-icon {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 0.25rem;
+        vertical-align: baseline;
+        position: relative;
+        top: 0.15em;
+      }
+
+      .icon-bounce {
+        animation: icon-bounce 2s ease-in-out infinite;
+      }
+
+      .icon-pulse {
+        animation: icon-pulse 2s ease-in-out infinite;
+      }
+
+      .icon-shake {
+        animation: icon-shake 2.5s ease-in-out infinite;
+      }
+
+      .icon-float {
+        animation: icon-float 3s ease-in-out infinite;
+      }
     </style>
   </head>
   <body class="min-h-screen bg-base-100">
     <!-- Header -->
-    <header class="navbar bg-base-100 border-b border-base-200 px-6 lg:px-12">
+    <header class="navbar bg-base-100 border-b border-base-200 px-4 sm:px-6 lg:px-12">
       <div class="flex-1">
-        <a href="/" class="text-2xl font-bold">poddock</a>
+        <a href="/" class="flex items-center gap-2 text-xl sm:text-2xl font-bold">
+          <img src="/logo.png" alt="PODDOCK" class="w-8 h-8 sm:w-10 sm:h-10" />
+          PODDOCK
+        </a>
       </div>
       <div class="flex-none gap-2">
-        <a href="/login" class="btn btn-ghost">ログイン</a>
+        <a href="/login" class="btn btn-ghost btn-sm sm:btn-md">ログイン</a>
       </div>
     </header>
 
     <!-- Hero -->
-    <section class="min-h-[calc(100vh-4rem)] flex flex-col justify-center px-6 lg:px-12 text-center relative" style="background-image: url('/start_your_podcast.png'); background-size: cover; background-position: center;">
-      <!-- Overlay -->
-      <div class="absolute inset-0 bg-base-100/80"></div>
-      <div class="relative z-10">
-        <h1 class="text-4xl lg:text-6xl font-bold mb-6">
-          番組運営を、もっとシンプルに。
+    <section class="min-h-[calc(100vh-4rem)] flex flex-col justify-center px-4 sm:px-6 lg:px-12 py-8 text-center relative overflow-hidden">
+      <!-- Background images -->
+      <img src="/top_hero_1.png" alt="" class="absolute bottom-0 left-0 w-1/5 max-w-md object-contain pointer-events-none" />
+      <img src="/top_hero_2.png" alt="" class="absolute bottom-0 right-0 w-1/5 max-w-md object-contain pointer-events-none" />
+      <div class="relative z-10 px-2">
+        <h1 class="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight hero-title">
+          番組運営を、<br class="sm:hidden" />もっとシンプルに<svg class="inline-block w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 ml-1 text-primary hero-waveform" style="vertical-align: baseline; position: relative; top: 0.1em;" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="9" width="2" height="6" rx="1" /><rect x="6" y="6" width="2" height="12" rx="1" /><rect x="10" y="4" width="2" height="16" rx="1" /><rect x="14" y="7" width="2" height="10" rx="1" /><rect x="18" y="10" width="2" height="4" rx="1" /></svg>
         </h1>
-        <p class="text-xl text-base-content/70 mb-8 max-w-2xl mx-auto" style="word-break: keep-all; overflow-wrap: break-word;">
-          Spotify、Apple Podcasts、Amazon Music、YouTube Music など<br class="hidden sm:inline" />主要プラットフォームへ簡単に音声配信。<br />
-          ホスティングから分析まで、すべてを一箇所で管理。
+        <p class="text-base sm:text-xl text-base-content/70 mb-8 max-w-2xl mx-auto leading-relaxed hero-subtitle">
+          Spotify、Apple Podcasts、<br class="sm:hidden" />Amazon Music、YouTube Music など<br class="hidden sm:inline" />
+          主要プラットフォームへ簡単に音声配信。<br />
+          ホスティングから分析まで、<br class="sm:hidden" />すべてを一箇所で管理。
         </p>
-        <div class="flex justify-center gap-4 mb-12">
-          <a href="/signup" class="btn btn-primary btn-lg">無料で始める</a>
+        <div class="flex justify-center gap-4 mb-10 sm:mb-12">
+          <a href="/login" class="btn btn-primary btn-md sm:btn-lg hero-cta">無料で始める</a>
         </div>
-        <div class="flex flex-wrap justify-center items-center gap-6 lg:gap-8">
-          <span class="text-sm text-base-content/60">配信先:</span>
-          <div class="flex flex-wrap justify-center items-center gap-6">
-            <img src="/badges/spotify.svg" alt="Listen on Spotify" class="h-10" />
-            <img src="/badges/apple-podcasts.svg" alt="Listen on Apple Podcasts" class="h-10" />
-            <img src="/badges/amazon-music.svg" alt="Listen on Amazon Music" class="h-10" />
-            <img src="/badges/youtube-music.svg" alt="Listen on YouTube Music" class="h-10" />
+        <div class="flex flex-col items-center gap-4">
+          <span class="text-sm text-base-content/60 hero-label">配信先:<span class="text-xs ml-2">（順次追加予定）</span></span>
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap justify-center items-center gap-4 sm:gap-6">
+            <img src="/badges/spotify.svg" alt="Listen on Spotify" class="h-8 sm:h-10 mx-auto hero-badge hero-badge-1" />
+            <img src="/badges/apple-podcasts.svg" alt="Listen on Apple Podcasts" class="h-8 sm:h-10 mx-auto hero-badge hero-badge-2" />
+            <img src="/badges/amazon-music.svg" alt="Listen on Amazon Music" class="h-8 sm:h-10 mx-auto hero-badge hero-badge-3" />
+            <img src="/badges/youtube-music.svg" alt="Listen on YouTube Music" class="h-8 sm:h-10 mx-auto hero-badge hero-badge-4" />
           </div>
         </div>
       </div>
     </section>
 
     <!-- What? - Problem -->
-    <section class="min-h-screen py-24 px-6 lg:px-12 bg-base-200 flex items-center">
+    <section class="min-h-screen py-16 sm:py-24 px-4 sm:px-6 lg:px-12 bg-base-200 flex items-center">
       <div class="max-w-4xl mx-auto w-full">
         <!-- Problem Statement -->
-        <div class="text-center mb-12">
-          <h2 class="text-3xl lg:text-4xl font-bold mb-4">リスナーに届けるなら、全部に配信したい。</h2>
-          <p class="text-xl text-base-content/70">でも、それぞれ管理するのは大変...</p>
+        <div class="text-center mb-8 sm:mb-12">
+          <h2 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 leading-tight animate-fade-up">
+            リスナーに届けるなら、<br class="sm:hidden" />全部に配信したい<span class="section-icon icon-bounce"><svg class="w-7 h-7 sm:w-9 sm:h-9 lg:w-10 lg:h-10 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg></span>
+          </h2>
+          <p class="text-base sm:text-xl text-base-content/70 animate-fade-up" data-delay="200">でも、それぞれ管理するのは大変...</p>
         </div>
 
         <!-- Platform logos showing the complexity -->
-        <div class="card bg-base-100 mb-12">
-          <div class="card-body">
-            <div class="flex flex-wrap justify-center items-center gap-6 mb-6">
-              <img src="/badges/spotify.svg" alt="Spotify" class="h-10 opacity-60" />
-              <span class="text-2xl text-base-content/30">+</span>
-              <img src="/badges/apple-podcasts.svg" alt="Apple Podcasts" class="h-10 opacity-60" />
-              <span class="text-2xl text-base-content/30">+</span>
-              <img src="/badges/amazon-music.svg" alt="Amazon Music" class="h-10 opacity-60" />
-              <span class="text-2xl text-base-content/30">+</span>
-              <img src="/badges/youtube-music.svg" alt="YouTube Music" class="h-10 opacity-60" />
-              <span class="text-2xl text-base-content/30">+ ...</span>
+        <div class="card bg-base-100 mb-8 sm:mb-12 animate-fade-up" data-delay="400">
+          <div class="card-body p-4 sm:p-8">
+            <div class="grid grid-cols-2 sm:flex sm:flex-wrap justify-center items-center gap-3 sm:gap-6 mb-4 sm:mb-6">
+              <img src="/badges/spotify.svg" alt="Spotify" class="h-8 sm:h-10 mx-auto animate-platform" data-delay="600" />
+              <img src="/badges/apple-podcasts.svg" alt="Apple Podcasts" class="h-8 sm:h-10 mx-auto animate-platform" data-delay="750" />
+              <img src="/badges/amazon-music.svg" alt="Amazon Music" class="h-8 sm:h-10 mx-auto animate-platform" data-delay="900" />
+              <img src="/badges/youtube-music.svg" alt="YouTube Music" class="h-8 sm:h-10 mx-auto animate-platform" data-delay="1050" />
             </div>
-            <p class="text-center text-base-content/70">それぞれに登録して、それぞれの管理画面で確認して...</p>
+            <p class="text-center text-sm sm:text-base text-base-content/70 animate-fade-up" data-delay="1200">それぞれに登録して、<br class="sm:hidden" />それぞれの管理画面で確認して...</p>
           </div>
         </div>
 
         <!-- Solution -->
-        <div class="bg-primary/10 rounded-2xl p-8 text-center">
-          <p class="text-2xl font-bold text-primary mb-6">poddockなら、ひとつの画面ですべて管理。</p>
-          <div class="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 mb-6">
-            <div class="flex items-center gap-3">
-              <span class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">1</span>
-              <span>番組を作る</span>
+        <div class="bg-primary/10 rounded-2xl p-5 sm:p-8 text-center animate-slide-up" data-delay="1400">
+          <p class="text-lg sm:text-2xl font-bold text-primary mb-5 sm:mb-6">
+            PODDOCKなら、<br class="sm:hidden" />ひとつの画面ですべて管理。
+          </p>
+          <div class="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-8 mb-5 sm:mb-6">
+            <div class="flex items-center gap-3 animate-step" data-delay="1700">
+              <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm sm:text-base">1</span>
+              <span class="text-sm sm:text-base">番組を作る</span>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/30 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/30 hidden sm:block animate-step" data-delay="1850" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-            <div class="flex items-center gap-3">
-              <span class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">2</span>
-              <span>配信先に登録<span class="text-xs text-base-content/50 ml-1">（初回のみ）</span></span>
+            <div class="flex items-center gap-3 animate-step" data-delay="2000">
+              <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm sm:text-base">2</span>
+              <span class="text-sm sm:text-base">配信先に登録<span class="text-xs text-base-content/50 ml-1">（初回のみ）</span></span>
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/30 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-base-content/30 hidden sm:block animate-step" data-delay="2150" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-            <div class="flex items-center gap-3">
-              <span class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">3</span>
-              <span>エピソードを公開</span>
+            <div class="flex items-center gap-3 animate-step" data-delay="2300">
+              <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm sm:text-base">3</span>
+              <span class="text-sm sm:text-base">エピソードを公開</span>
             </div>
           </div>
-          <p class="text-base-content/70">あとは音声をアップするたびに、自動で全プラットフォームに配信。</p>
+          <p class="text-sm sm:text-base text-base-content/70 animate-fade-up" data-delay="2500">あとは音声をアップするたびに、<br class="sm:hidden" />自動で全プラットフォームに配信。</p>
         </div>
       </div>
     </section>
 
     <!-- Features -->
-    <section class="min-h-screen flex flex-col justify-center py-16 px-6 lg:px-12">
+    <section class="min-h-screen flex flex-col justify-center py-12 sm:py-16 px-4 sm:px-6 lg:px-12 bg-base-100">
       <div class="max-w-6xl mx-auto w-full">
-        <h2 class="text-3xl font-bold text-center mb-12">主な機能</h2>
-        <div class="grid md:grid-cols-3 gap-8">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">PODDOCKの特徴<span class="section-icon icon-pulse"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="currentColor" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg></span></h2>
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           <div class="card bg-base-100 fade-in-card">
-            <div class="card-body">
-              <div class="w-12 h-12 mb-4 text-primary">
+            <div class="card-body p-4 sm:p-6">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
                 </svg>
               </div>
-              <h3 class="card-title">簡単アップロード</h3>
-              <p class="text-base-content/70">音声ファイルをドラッグ&ドロップするだけ。自動でRSSフィードを生成します。</p>
+              <h3 class="card-title text-base sm:text-lg">簡単アップロード</h3>
+              <p class="text-sm sm:text-base text-base-content/70">音声ファイルをドラッグ&ドロップするだけ。自動でRSSフィードを生成。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
-            <div class="card-body">
-              <div class="w-12 h-12 mb-4 text-primary">
+            <div class="card-body p-4 sm:p-6">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12.75 3.03v.568c0 .334.148.65.405.864l1.068.89c.442.369.535 1.01.216 1.49l-.51.766a2.25 2.25 0 0 1-1.161.886l-.143.048a1.107 1.107 0 0 0-.57 1.664c.369.555.169 1.307-.427 1.605L9 13.125l.423 1.059a.956.956 0 0 1-1.652.928l-.679-.906a1.125 1.125 0 0 0-1.906.172L4.5 15.75l-.612.153M12.75 3.031a9 9 0 1 0 6.712 14.374M12.75 3.03V1.5m0 1.53v.568" />
                 </svg>
               </div>
-              <h3 class="card-title">どこにでも配信</h3>
-              <p class="text-base-content/70" style="word-break: keep-all;">Spotify、Apple Podcasts、Amazon Music、YouTube Musicなど主要プラットフォームに対応。</p>
+              <h3 class="card-title text-base sm:text-lg">どこにでも配信</h3>
+              <p class="text-sm sm:text-base text-base-content/70">Spotify、Apple Podcasts、Amazon Musicなど主要プラットフォームに対応。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
-            <div class="card-body">
-              <div class="w-12 h-12 mb-4 text-primary">
+            <div class="card-body p-4 sm:p-6">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
                 </svg>
               </div>
-              <h3 class="card-title">分析ダッシュボード</h3>
-              <p class="text-base-content/70">再生数、リスナー数、人気エピソードをリアルタイムで確認。</p>
+              <h3 class="card-title text-base sm:text-lg">分析ダッシュボード</h3>
+              <p class="text-sm sm:text-base text-base-content/70">再生数、人気エピソードをリアルタイムで確認。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
-            <div class="card-body">
-              <div class="w-12 h-12 mb-4 text-primary">
+            <div class="card-body p-4 sm:p-6">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                 </svg>
               </div>
-              <h3 class="card-title">プライベート配信</h3>
-              <p class="text-base-content/70">社内向け、有料会員向けなど限定配信にも対応。</p>
+              <h3 class="card-title text-base sm:text-lg">限定公開RSS</h3>
+              <p class="text-sm sm:text-base text-base-content/70">トークン付きURLで、特定の人だけに配信。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
-            <div class="card-body">
-              <div class="w-12 h-12 mb-4 text-primary">
+            <div class="card-body p-4 sm:p-6">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
                 </svg>
               </div>
-              <h3 class="card-title">カスタマイズ</h3>
-              <p class="text-base-content/70">番組ページをあなたのブランドに合わせてカスタマイズ。</p>
+              <h3 class="card-title text-base sm:text-lg">番組ウェブサイト</h3>
+              <p class="text-sm sm:text-base text-base-content/70">番組専用の公開ページを自動生成。リスナーへの案内に。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
-            <div class="card-body">
-              <div class="w-12 h-12 mb-4 text-primary">
+            <div class="card-body p-4 sm:p-6">
+              <div class="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
                 </svg>
               </div>
-              <h3 class="card-title">高速配信</h3>
-              <p class="text-base-content/70">グローバルCDNで世界中のリスナーに高速配信。</p>
+              <h3 class="card-title text-base sm:text-lg">高速配信</h3>
+              <p class="text-sm sm:text-base text-base-content/70">グローバルCDNで世界中のリスナーに高速配信。</p>
             </div>
           </div>
         </div>
+        <p class="text-center text-lg sm:text-xl font-medium text-primary mt-8 sm:mt-12">...and more! <span class="text-base-content/70">新機能を随時追加予定</span></p>
       </div>
     </section>
 
     <!-- Pricing -->
-    <section class="min-h-screen flex flex-col justify-center py-20 px-6 lg:px-12">
+    <section class="min-h-screen flex flex-col justify-center py-12 sm:py-20 px-4 sm:px-6 lg:px-12 bg-base-200">
       <div class="max-w-6xl mx-auto w-full">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold mb-4">料金プラン</h2>
-          <p class="text-xl text-base-content/70 mb-8">あなたのポッドキャストに最適なプランを選択</p>
+        <div class="text-center mb-8 sm:mb-12">
+          <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">料金プラン<span class="section-icon icon-float"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" /><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" /></svg></span></h2>
+          <p class="text-base sm:text-xl text-base-content/70 mb-6 sm:mb-8">あなたのポッドキャストに<br class="sm:hidden" />最適なプランを選択</p>
 
           <!-- Monthly/Yearly Toggle -->
-          <div class="flex justify-center items-center gap-4 mb-4">
-            <span class="text-base-content/70">月払い</span>
-            <input type="checkbox" id="billing-toggle" class="toggle toggle-primary" checked />
-            <span class="text-base-content/70">年払い<span class="badge badge-success badge-sm ml-2">2ヶ月分お得</span></span>
+          <div class="flex justify-center items-center gap-3 sm:gap-4 mb-4">
+            <span class="text-sm sm:text-base text-base-content/70">月払い</span>
+            <input type="checkbox" id="billing-toggle" class="toggle toggle-primary toggle-sm sm:toggle-md" checked />
+            <span class="text-sm sm:text-base text-base-content/70">年払い<span class="badge badge-success badge-xs sm:badge-sm ml-1 sm:ml-2">2ヶ月お得</span></span>
           </div>
         </div>
 
         <!-- Pricing Cards -->
-        <div class="grid md:grid-cols-3 gap-8">
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           <!-- Free -->
           <div class="card bg-base-200 fade-in-card">
             <div class="card-body text-center">
@@ -265,9 +474,13 @@ const lang = getLangFromUrl(Astro.url);
                   <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                   <span><strong>10,000</strong> 再生/月</span>
                 </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>基本アナリティクス<span class="badge badge-success badge-xs ml-2">リリース記念</span></span>
+                </li>
               </ul>
               <div class="mt-auto pt-6">
-                <a href="/signup" class="btn btn-primary w-full">無料で始める</a>
+                <a href="/login" class="btn btn-primary w-full">無料で始める</a>
               </div>
             </div>
           </div>
@@ -364,58 +577,48 @@ const lang = getLangFromUrl(Astro.url);
     </section>
 
     <!-- FAQ -->
-    <section class="min-h-screen py-20 px-6 lg:px-12 bg-base-200 flex items-center">
-      <div class="max-w-3xl mx-auto">
-        <h2 class="text-3xl font-bold text-center mb-12">よくある質問</h2>
+    <section class="min-h-screen py-12 sm:py-20 px-4 sm:px-6 lg:px-12 bg-base-100 flex items-center">
+      <div class="max-w-3xl mx-auto w-full">
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">よくある質問<span class="section-icon icon-shake"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg></span></h2>
 
-        <div class="space-y-4">
+        <div class="space-y-3 sm:space-y-4">
           <div class="collapse collapse-arrow bg-base-100">
             <input type="radio" name="faq-accordion" checked />
-            <div class="collapse-title text-lg font-medium">
+            <div class="collapse-title text-sm sm:text-lg font-medium pr-8">
               ポッドキャストを始めるのに必要なものは？
             </div>
             <div class="collapse-content">
-              <p class="text-base-content/70">音声ファイル（MP3など）とカバーアートがあれば始められます。マイクやDAWソフトは既にお持ちのもので問題ありません。</p>
+              <p class="text-sm sm:text-base text-base-content/70">音声ファイル（MP3など）とカバーアートがあれば始められます。マイクやDAWソフトは既にお持ちのもので問題ありません。</p>
             </div>
           </div>
 
           <div class="collapse collapse-arrow bg-base-100">
             <input type="radio" name="faq-accordion" />
-            <div class="collapse-title text-lg font-medium">
-              Spotify や Apple Podcasts への配信はどうやるの？
+            <div class="collapse-title text-sm sm:text-lg font-medium pr-8">
+              Spotify や Apple Podcasts への配信は？
             </div>
             <div class="collapse-content">
-              <p class="text-base-content/70">poddockで番組を作成するとRSSフィードが自動生成されます。そのURLを各プラットフォームに登録するだけで配信が開始されます。詳しい手順はヘルプページをご覧ください。</p>
+              <p class="text-sm sm:text-base text-base-content/70">PODDOCKで番組を作成するとRSSフィードが自動生成されます。そのURLを各プラットフォームに登録するだけで配信開始。</p>
             </div>
           </div>
 
           <div class="collapse collapse-arrow bg-base-100">
             <input type="radio" name="faq-accordion" />
-            <div class="collapse-title text-lg font-medium">
+            <div class="collapse-title text-sm sm:text-lg font-medium pr-8">
               無料プランでも広告は入りますか？
             </div>
             <div class="collapse-content">
-              <p class="text-base-content/70">いいえ、poddockが挿入する広告はありません。無料プランでもあなたのコンテンツはそのまま配信されます。</p>
+              <p class="text-sm sm:text-base text-base-content/70">いいえ、PODDOCKが挿入する広告はありません。無料プランでもあなたのコンテンツはそのまま配信されます。</p>
             </div>
           </div>
 
           <div class="collapse collapse-arrow bg-base-100">
             <input type="radio" name="faq-accordion" />
-            <div class="collapse-title text-lg font-medium">
+            <div class="collapse-title text-sm sm:text-lg font-medium pr-8">
               あとからプランを変更できますか？
             </div>
             <div class="collapse-content">
-              <p class="text-base-content/70">はい、いつでもアップグレード・ダウングレードが可能です。プラン変更は即時反映され、日割り計算で調整されます。</p>
-            </div>
-          </div>
-
-          <div class="collapse collapse-arrow bg-base-100">
-            <input type="radio" name="faq-accordion" />
-            <div class="collapse-title text-lg font-medium">
-              既存のポッドキャストを移行できますか？
-            </div>
-            <div class="collapse-content">
-              <p class="text-base-content/70">はい、他のホスティングサービスからの移行をサポートしています。RSSフィードをインポートするだけで、エピソード情報を自動で取り込めます。</p>
+              <p class="text-sm sm:text-base text-base-content/70">はい、いつでもアップグレード・ダウングレードが可能です。プラン変更は即時反映され、日割り計算で調整されます。</p>
             </div>
           </div>
         </div>
@@ -423,16 +626,12 @@ const lang = getLangFromUrl(Astro.url);
     </section>
 
     <!-- CTA -->
-    <section class="py-20 px-6 lg:px-12 text-center">
-      <h2 class="text-3xl font-bold mb-6">今すぐポッドキャストを始めよう</h2>
-      <p class="text-xl text-base-content/70 mb-8">シンプルな料金、透明な価格設定。</p>
-      <a href="/signup" class="btn btn-primary btn-lg">無料で始める</a>
+    <section class="py-12 sm:py-20 px-4 sm:px-6 lg:px-12 text-center bg-base-200">
+      <h2 class="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">PODDOCKで今すぐ始めよう<span class="section-icon icon-bounce"><svg class="w-7 h-7 sm:w-8 sm:h-8 text-primary inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg></span></h2>
+      <a href="/login" class="btn btn-primary btn-md sm:btn-lg">無料で始める</a>
     </section>
 
-    <!-- Footer -->
-    <footer class="py-8 px-6 lg:px-12 border-t border-base-200 text-center text-base-content/60">
-      <p>&copy; 2024 poddock. All rights reserved.</p>
-    </footer>
+    <Footer />
 
     <script>
       // Fade-in animation on scroll
@@ -448,9 +647,15 @@ const lang = getLangFromUrl(Astro.url);
         });
       }, { threshold: 0.1 });
 
+      // Observe fade-in cards
       document.querySelectorAll('.fade-in-card').forEach((card, index) => {
-        card.dataset.delay = index * 100;
+        card.dataset.delay = card.dataset.delay || index * 100;
         observer.observe(card);
+      });
+
+      // Observe all animated elements
+      document.querySelectorAll('.animate-fade-up, .animate-platform, .animate-slide-up, .animate-step').forEach((el) => {
+        observer.observe(el);
       });
 
       // Billing toggle (Monthly/Yearly)

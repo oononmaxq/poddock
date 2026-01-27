@@ -15,23 +15,37 @@ bucket_name = "poddock-bucket"
 # 環境変数（秘匿値は.dev.varsに記載）
 # RESEND_API_KEY, JWT_SECRET, etc. → .dev.vars
 
-# Staging環境
-[env.staging]
-[env.staging.vars]
-BASE_URL = "https://staging.poddock.io"
-R2_PUBLIC_URL = "https://staging.poddock.io"
+# Preview環境（staging ブランチ等、非本番ブランチ用）
+# Basic認証の設定は Cloudflare Dashboard で環境変数として設定:
+#   BASIC_AUTH_USER=<username>
+#   BASIC_AUTH_PASS=<password>
+[env.preview]
+[env.preview.vars]
+BASE_URL = "https://staging.poddock.pages.dev"
+R2_PUBLIC_URL = "https://staging.poddock.pages.dev"
 
-[[env.staging.d1_databases]]
+[[env.preview.d1_databases]]
 binding = "DB"
 database_name = "poddock-db-staging"
 database_id = "b63d5c3b-b84d-4ff0-bfbd-68fced192af8"
 
-[[env.staging.r2_buckets]]
+[[env.preview.r2_buckets]]
 binding = "BUCKET"
 bucket_name = "poddock-bucket-staging"
 
 # Production環境
+# Secretsは Cloudflare Dashboard で設定:
+#   JWT_SECRET, RESEND_API_KEY, RESEND_FROM
 [env.production]
 [env.production.vars]
 BASE_URL = "https://poddock.io"
 R2_PUBLIC_URL = "https://poddock.io"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "poddock-db-production"
+database_id = "ce382f1b-00a4-403b-952c-d3b7d4685b47"
+
+[[env.production.r2_buckets]]
+binding = "BUCKET"
+bucket_name = "poddock-bucket-production"

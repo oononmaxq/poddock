@@ -1,5 +1,4 @@
 import { useState } from 'preact/hooks';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { apiPost, apiDelete } from '../../hooks/useApi';
 import { showToast } from '../../components/Toast';
@@ -21,7 +20,6 @@ export function PodcastSettings({ podcastId }: PodcastSettingsProps) {
 }
 
 function TokenRotateCard({ podcastId }: { podcastId: string }) {
-  const { token } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +28,7 @@ function TokenRotateCard({ podcastId }: { podcastId: string }) {
 
     setLoading(true);
     try {
-      await apiPost(`/api/podcasts/${podcastId}/feed-token/rotate`, token, {});
+      await apiPost(`/api/podcasts/${podcastId}/feed-token/rotate`, {});
       showToast(t('podcast.settings.tokenRotateSuccess'));
       window.location.reload();
     } catch {
@@ -62,7 +60,6 @@ function TokenRotateCard({ podcastId }: { podcastId: string }) {
 }
 
 function DangerZoneCard({ podcastId, basePath }: { podcastId: string; basePath: string }) {
-  const { token } = useAuth();
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
 
@@ -71,7 +68,7 @@ function DangerZoneCard({ podcastId, basePath }: { podcastId: string; basePath: 
 
     setLoading(true);
     try {
-      await apiDelete(`/api/podcasts/${podcastId}`, token);
+      await apiDelete(`/api/podcasts/${podcastId}`);
       window.location.href = `${basePath}/podcasts`;
     } catch {
       showToast(t('podcast.settings.deleteError'), 'error');

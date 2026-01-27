@@ -1,15 +1,24 @@
-// Authentication hook
+// Authentication hook - now uses HttpOnly cookies
 export function useAuth() {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  // Token is stored in HttpOnly cookie, not accessible from JS
+  // We track authentication state based on API responses
 
-  const logout = () => {
-    localStorage.removeItem('access_token');
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Ignore errors, redirect anyway
+    }
     window.location.href = '/login';
   };
 
-  return { token, logout };
+  return { logout };
 }
 
-export function getAuthHeaders(token: string | null) {
-  return token ? { Authorization: `Bearer ${token}` } : {};
+// No longer needed - cookies are sent automatically
+export function getAuthHeaders() {
+  return {};
 }

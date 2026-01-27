@@ -1,0 +1,58 @@
+---
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="ja" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>お問い合わせ | PODDOCK</title>
+  </head>
+  <body class="min-h-screen bg-base-100 flex flex-col">
+    <!-- Header -->
+    <header class="navbar bg-base-100 border-b border-base-200 px-4 sm:px-6 lg:px-12">
+      <div class="flex-1">
+        <a href="/" class="flex items-center gap-2 text-xl sm:text-2xl font-bold">
+          <img src="/logo.png" alt="PODDOCK" class="w-8 h-8 sm:w-10 sm:h-10" />
+          PODDOCK
+        </a>
+      </div>
+      <div class="flex-none gap-2">
+        <a href="/login" class="btn btn-ghost btn-sm sm:btn-md">ログイン</a>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <h1 class="text-2xl sm:text-3xl font-bold mb-2">お問い合わせ</h1>
+      <p class="text-base-content/70 mb-8">ご質問・ご要望などお気軽にお問い合わせください。</p>
+
+      <div class="card bg-base-200">
+        <div class="card-body text-center">
+          <div class="flex justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-primary">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+          </div>
+          <p class="text-base-content/70 mb-4">以下のメールアドレスまでお問い合わせください。</p>
+          <a href="mailto:support@poddock.io" class="text-xl font-semibold text-primary link link-hover">
+            support@poddock.io
+          </a>
+          <div class="mt-6">
+            <a href="mailto:support@poddock.io" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+              メールを送る
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <Footer />
+  </body>
+</html>

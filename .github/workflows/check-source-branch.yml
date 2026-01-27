@@ -1,0 +1,18 @@
+name: Check source branch
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR is from staging branch
+        run: |
+          if [ "${{ github.head_ref }}" != "staging" ]; then
+            echo "Error: PRs to main must come from staging branch"
+            echo "Current source branch: ${{ github.head_ref }}"
+            exit 1
+          fi
+          echo "OK: PR is from staging branch"

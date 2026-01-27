@@ -1,5 +1,4 @@
 import { useApi } from '../../hooks/useApi';
-import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { VisibilityBadge } from '../../components/Badge';
 import { Loading } from '../../components/Loading';
@@ -21,10 +20,9 @@ interface PodcastListResponse {
 }
 
 export function PodcastList() {
-  const { token } = useAuth();
   const { t, lang } = useI18n();
   const basePath = lang === 'ja' ? '' : `/${lang}`;
-  const { data, loading, error } = useApi<PodcastListResponse>('/api/podcasts', token);
+  const { data, loading, error } = useApi<PodcastListResponse>('/api/podcasts');
 
   if (loading) return <Loading />;
   if (error) return <div className="alert alert-error">{error}</div>;
