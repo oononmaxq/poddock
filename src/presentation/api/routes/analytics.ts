@@ -12,7 +12,9 @@ import type {
   CountryAnalytics,
   DailyAnalytics,
   AnalyticsPeriodOption,
+  PlatformPlayData,
 } from '@domain/analytics/types';
+import { detectPlatform, getPlatformDisplayName } from '@domain/analytics/platform';
 
 export const analyticsRoutes = new Hono<AppEnv>();
 
@@ -77,10 +79,18 @@ const episodesQuerySchema = z.object({
 const countriesQuerySchema = z.object({
   period: z.enum(['7d', '30d', '90d', 'all']).default('30d'),
   limit: z.coerce.number().int().min(1).max(50).default(10),
+  episode_id: z.string().optional(),
 });
 
 const dailyQuerySchema = z.object({
   days: z.coerce.number().int().min(7).max(90).default(30),
+  episode_id: z.string().optional(),
+});
+
+const platformsQuerySchema = z.object({
+  period: z.enum(['7d', '30d', '90d', 'all']).default('30d'),
+  limit: z.coerce.number().int().min(1).max(20).default(10),
+  episode_id: z.string().optional(),
 });
 
 // GET /overview - Monthly play counts overview
@@ -250,6 +260,9 @@ analyticsRoutes.get('/countries', async (c) => {
   if (startDate) {
     conditions.push(gte(playLogs.playedAt, startDate));
   }
+  if (query.episode_id) {
+    conditions.push(eq(playLogs.episodeId, query.episode_id));
+  }
 
   // Get country play counts
   const countryStats = await db
@@ -312,6 +325,15 @@ analyticsRoutes.get('/daily', async (c) => {
   const startDate = getDateDaysAgo(query.days - 1);
   const endDate = getToday();
 
+  // Build query conditions
+  const conditions = [
+    eq(playLogs.podcastId, podcastId),
+    gte(playLogs.playedAt, startDate),
+  ];
+  if (query.episode_id) {
+    conditions.push(eq(playLogs.episodeId, query.episode_id));
+  }
+
   // Get daily play counts
   const dailyStats = await db
     .select({
@@ -319,12 +341,7 @@ analyticsRoutes.get('/daily', async (c) => {
       playCount: sql<number>`count(*)`.as('play_count'),
     })
     .from(playLogs)
-    .where(
-      and(
-        eq(playLogs.podcastId, podcastId),
-        gte(playLogs.playedAt, startDate)
-      )
-    )
+    .where(and(...conditions))
     .groupBy(sql`date(${playLogs.playedAt})`)
     .orderBy(sql`date(${playLogs.playedAt})`);
 
@@ -351,5 +368,86 @@ analyticsRoutes.get('/daily', async (c) => {
       end: endDate,
     },
     daily_plays: dailyPlays,
+  });
+});
+
+// GET /platforms - Platform distribution
+analyticsRoutes.get('/platforms', async (c) => {
+  const podcastId = c.req.param('podcastId');
+  const query = platformsQuerySchema.parse(c.req.query());
+  const db = createDb(c.env.DB);
+
+  // Check podcast exists
+  const podcast = await db.query.podcasts.findFirst({
+    where: eq(podcasts.id, podcastId),
+  });
+  if (!podcast) {
+    throw new AppError(404, 'not_found', 'Podcast not found');
+  }
+
+  const startDate = getPeriodStartDate(query.period);
+
+  // Build query conditions
+  const conditions = [eq(playLogs.podcastId, podcastId)];
+  if (startDate) {
+    conditions.push(gte(playLogs.playedAt, startDate));
+  }
+  if (query.episode_id) {
+    conditions.push(eq(playLogs.episodeId, query.episode_id));
+  }
+
+  // Get all play logs with user agents for the period
+  const logs = await db
+    .select({
+      userAgent: playLogs.userAgent,
+    })
+    .from(playLogs)
+    .where(and(...conditions));
+
+  // Count by platform
+  const platformCounts = new Map<string, number>();
+  for (const log of logs) {
+    const platform = detectPlatform(log.userAgent);
+    platformCounts.set(platform, (platformCounts.get(platform) ?? 0) + 1);
+  }
+
+  // Sort by count descending
+  const sortedPlatforms = Array.from(platformCounts.entries())
+    .sort((a, b) => b[1] - a[1]);
+
+  const totalPlays = logs.length;
+
+  // Take top platforms and aggregate the rest into "other"
+  const topPlatforms = sortedPlatforms.slice(0, query.limit);
+  const otherPlatforms = sortedPlatforms.slice(query.limit);
+  const otherTotal = otherPlatforms.reduce((sum, [, count]) => sum + count, 0);
+
+  const platformsList: Array<{
+    platform: string;
+    display_name: string;
+    play_count: number;
+    percentage: number;
+  }> = topPlatforms.map(([platform, count]) => ({
+    platform,
+    display_name: getPlatformDisplayName(platform as Parameters<typeof getPlatformDisplayName>[0]),
+    play_count: count,
+    percentage: totalPlays > 0 ? Math.round((count / totalPlays) * 1000) / 10 : 0,
+  }));
+
+  // Add "other" if there are additional platforms
+  if (otherTotal > 0) {
+    platformsList.push({
+      platform: 'other',
+      display_name: 'Other',
+      play_count: otherTotal,
+      percentage: totalPlays > 0 ? Math.round((otherTotal / totalPlays) * 1000) / 10 : 0,
+    });
+  }
+
+  return c.json({
+    podcast_id: podcastId,
+    period: query.period,
+    platforms: platformsList,
+    total_plays: totalPlays,
   });
 });

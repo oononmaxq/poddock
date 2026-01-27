@@ -54,8 +54,23 @@ interface DailyData {
   daily_plays: DailyPlay[];
 }
 
+interface PlatformPlay {
+  platform: string;
+  display_name: string;
+  play_count: number;
+  percentage: number;
+}
+
+interface PlatformsData {
+  podcast_id: string;
+  period: string;
+  platforms: PlatformPlay[];
+  total_plays: number;
+}
+
 interface AnalyticsDashboardProps {
   podcastId: string;
+  episodeId?: string | null;
 }
 
 type Period = '7d' | '30d' | '90d';
@@ -76,12 +91,13 @@ const COUNTRY_NAMES: Record<string, string> = {
   UNKNOWN: '不明',
 };
 
-export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ podcastId, episodeId }: AnalyticsDashboardProps) {
   const { t } = useI18n();
   const [period, setPeriod] = useState<Period>('30d');
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [episodesData, setEpisodesData] = useState<EpisodesData | null>(null);
   const [countriesData, setCountriesData] = useState<CountriesData | null>(null);
+  const [platformsData, setPlatformsData] = useState<PlatformsData | null>(null);
   const [dailyData, setDailyData] = useState<DailyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,12 +110,17 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
 
       try {
         const days = period === '7d' ? 7 : period === '30d' ? 30 : 90;
+        const episodeParam = episodeId ? `&episode_id=${episodeId}` : '';
 
-        const [overviewRes, episodesRes, countriesRes, dailyRes] = await Promise.all([
+        const [overviewRes, episodesRes, countriesRes, platformsRes, dailyRes] = await Promise.all([
           fetch(`/api/podcasts/${podcastId}/analytics/overview?months=6`, { credentials: 'include' }),
-          fetch(`/api/podcasts/${podcastId}/analytics/episodes?period=${period}&limit=10`, { credentials: 'include' }),
-          fetch(`/api/podcasts/${podcastId}/analytics/countries?period=${period}&limit=10`, { credentials: 'include' }),
-          fetch(`/api/podcasts/${podcastId}/analytics/daily?days=${days}`, { credentials: 'include' }),
+          // Skip episodes endpoint when viewing single episode
+          episodeId
+            ? Promise.resolve(new Response(JSON.stringify({ episodes: [], total_plays: 0 })))
+            : fetch(`/api/podcasts/${podcastId}/analytics/episodes?period=${period}&limit=10`, { credentials: 'include' }),
+          fetch(`/api/podcasts/${podcastId}/analytics/countries?period=${period}&limit=10${episodeParam}`, { credentials: 'include' }),
+          fetch(`/api/podcasts/${podcastId}/analytics/platforms?period=${period}&limit=10${episodeParam}`, { credentials: 'include' }),
+          fetch(`/api/podcasts/${podcastId}/analytics/daily?days=${days}${episodeParam}`, { credentials: 'include' }),
         ]);
 
         // Check if user needs to upgrade (403 means plan restriction)
@@ -109,20 +130,22 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
           return;
         }
 
-        if (!overviewRes.ok || !episodesRes.ok || !countriesRes.ok || !dailyRes.ok) {
+        if (!overviewRes.ok || !episodesRes.ok || !countriesRes.ok || !platformsRes.ok || !dailyRes.ok) {
           throw new Error('Failed to fetch analytics');
         }
 
-        const [overviewData, episodesData, countriesData, dailyData] = await Promise.all([
+        const [overviewData, episodesData, countriesData, platformsData, dailyData] = await Promise.all([
           overviewRes.json(),
           episodesRes.json(),
           countriesRes.json(),
+          platformsRes.json(),
           dailyRes.json(),
         ]);
 
         setOverview(overviewData);
         setEpisodesData(episodesData);
         setCountriesData(countriesData);
+        setPlatformsData(platformsData);
         setDailyData(dailyData);
       } catch (err) {
         setError((err as Error).message);
@@ -132,7 +155,7 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
     }
 
     fetchData();
-  }, [podcastId, period]);
+  }, [podcastId, episodeId, period]);
 
   if (loading) return <Loading />;
   if (needsUpgrade) return <PlanGate />;
@@ -235,35 +258,37 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Episode Rankings */}
-        <div className="card bg-base-200">
-          <div className="card-body">
-            <h3 className="card-title text-lg">{t('analytics.episodes.title')}</h3>
-            {episodesData && episodesData.episodes.length > 0 ? (
-              <div className="space-y-3 mt-2">
-                {episodesData.episodes.map((ep, index) => (
-                  <div key={ep.episode_id} className="flex items-center gap-3">
-                    <div className="text-sm text-base-content/50 w-6 text-right">{index + 1}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm truncate">{ep.title}</div>
-                      <div className="w-full bg-base-300 rounded-full h-2 mt-1">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all"
-                          style={{ width: `${ep.percentage}%` }}
-                        />
+        {/* Episode Rankings - only show when not viewing single episode */}
+        {!episodeId && (
+          <div className="card bg-base-200">
+            <div className="card-body">
+              <h3 className="card-title text-lg">{t('analytics.episodes.title')}</h3>
+              {episodesData && episodesData.episodes.length > 0 ? (
+                <div className="space-y-3 mt-2">
+                  {episodesData.episodes.map((ep, index) => (
+                    <div key={ep.episode_id} className="flex items-center gap-3">
+                      <div className="text-sm text-base-content/50 w-6 text-right">{index + 1}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate">{ep.title}</div>
+                        <div className="w-full bg-base-300 rounded-full h-2 mt-1">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{ width: `${ep.percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium w-16 text-right">
+                        {ep.play_count.toLocaleString()}
                       </div>
                     </div>
-                    <div className="text-sm font-medium w-16 text-right">
-                      {ep.play_count.toLocaleString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-base-content/50 py-8">{t('analytics.noData')}</div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-base-content/50 py-8">{t('analytics.noData')}</div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Country Distribution */}
         <div className="card bg-base-200">
@@ -299,6 +324,45 @@ export function AnalyticsDashboard({ podcastId }: AnalyticsDashboardProps) {
                     </div>
                     <div className="text-sm text-base-content/70 w-12 text-right">
                       {country.percentage}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-base-content/50 py-8">{t('analytics.noData')}</div>
+            )}
+          </div>
+        </div>
+
+        {/* Platform Distribution */}
+        <div className="card bg-base-200">
+          <div className="card-body">
+            <h3 className="card-title text-lg">{t('analytics.platforms.title')}</h3>
+            {platformsData && platformsData.platforms.length > 0 ? (
+              <div className="space-y-3 mt-2">
+                {platformsData.platforms.map((platform) => (
+                  <div key={platform.platform} className="flex items-center gap-3">
+                    <div className="w-8 text-lg">
+                      {platform.platform === 'apple_podcasts' ? '🍎' :
+                       platform.platform === 'spotify' ? '🎵' :
+                       platform.platform === 'amazon_music' ? '📦' :
+                       platform.platform === 'google_podcasts' ? '🔍' :
+                       platform.platform === 'overcast' ? '☁️' :
+                       platform.platform === 'pocket_casts' ? '📱' :
+                       platform.platform === 'web_browser' ? '🌐' :
+                       '📻'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm">{platform.display_name}</div>
+                      <div className="w-full bg-base-300 rounded-full h-2 mt-1">
+                        <div
+                          className="bg-accent h-2 rounded-full transition-all"
+                          style={{ width: `${platform.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-sm text-base-content/70 w-12 text-right">
+                      {platform.percentage}%
                     </div>
                   </div>
                 ))}

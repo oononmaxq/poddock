@@ -23,6 +23,13 @@ export interface DailyPlayData {
   playCount: number;
 }
 
+export interface PlatformPlayData {
+  platform: string;
+  displayName: string;
+  playCount: number;
+  percentage: number;
+}
+
 export interface AnalyticsPeriod {
   start: string;
   end: string;
@@ -56,4 +63,11 @@ export interface DailyAnalytics {
   podcastId: string;
   period: AnalyticsPeriod;
   dailyPlays: DailyPlayData[];
+}
+
+export interface PlatformAnalytics {
+  podcastId: string;
+  period: AnalyticsPeriodOption;
+  platforms: PlatformPlayData[];
+  totalPlays: number;
 }

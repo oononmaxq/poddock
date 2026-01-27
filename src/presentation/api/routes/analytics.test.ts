@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { canAccessAnalytics } from '@domain/plan/limits';
+import { detectPlatform, getPlatformDisplayName } from '@domain/analytics/platform';
 
 // Query param schemas (same as in analytics.ts)
 const overviewQuerySchema = z.object({
@@ -19,6 +20,11 @@ const countriesQuerySchema = z.object({
 
 const dailyQuerySchema = z.object({
   days: z.coerce.number().int().min(7).max(90).default(30),
+});
+
+const platformsQuerySchema = z.object({
+  period: z.enum(['7d', '30d', '90d', 'all']).default('30d'),
+  limit: z.coerce.number().int().min(1).max(20).default(10),
 });
 
 describe('Analytics Query Schema Validation', () => {
@@ -150,6 +156,30 @@ describe('Analytics Query Schema Validation', () => {
       expect(result.success).toBe(false);
     });
   });
+
+  describe('platformsQuerySchema', () => {
+    it('should default period to 30d', () => {
+      const result = platformsQuerySchema.safeParse({});
+      expect(result.success).toBe(true);
+      expect(result.data?.period).toBe('30d');
+    });
+
+    it('should default limit to 10', () => {
+      const result = platformsQuerySchema.safeParse({});
+      expect(result.success).toBe(true);
+      expect(result.data?.limit).toBe(10);
+    });
+
+    it('should accept valid period', () => {
+      const result = platformsQuerySchema.safeParse({ period: '7d' });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject limit greater than 20', () => {
+      const result = platformsQuerySchema.safeParse({ limit: '21' });
+      expect(result.success).toBe(false);
+    });
+  });
 });
 
 describe('Analytics Plan Authorization', () => {
@@ -259,6 +289,96 @@ describe('Analytics Response Structure', () => {
     expect(response.period).toHaveProperty('end');
     expect(response.daily_plays[0]).toHaveProperty('date');
     expect(response.daily_plays[0]).toHaveProperty('play_count');
+  });
+
+  it('should have correct platforms response structure', () => {
+    const response = {
+      podcast_id: 'pod_123',
+      period: '30d',
+      platforms: [
+        { platform: 'apple_podcasts', display_name: 'Apple Podcasts', play_count: 100, percentage: 50.0 },
+        { platform: 'spotify', display_name: 'Spotify', play_count: 60, percentage: 30.0 },
+        { platform: 'other', display_name: 'Other', play_count: 40, percentage: 20.0 },
+      ],
+      total_plays: 200,
+    };
+
+    expect(response).toHaveProperty('podcast_id');
+    expect(response).toHaveProperty('period');
+    expect(response).toHaveProperty('platforms');
+    expect(response).toHaveProperty('total_plays');
+    expect(response.platforms[0]).toHaveProperty('platform');
+    expect(response.platforms[0]).toHaveProperty('display_name');
+    expect(response.platforms[0]).toHaveProperty('play_count');
+    expect(response.platforms[0]).toHaveProperty('percentage');
+  });
+});
+
+describe('Platform Detection', () => {
+  it('should detect Apple Podcasts from AppleCoreMedia user agent', () => {
+    expect(detectPlatform('AppleCoreMedia/1.0.0.19H12 (iPhone; U; CPU OS 15_7_1 like Mac OS X)')).toBe('apple_podcasts');
+  });
+
+  it('should detect Apple Podcasts from Podcasts app user agent', () => {
+    expect(detectPlatform('Podcasts/1631.6 CFNetwork/1410.0.3 Darwin/22.6.0')).toBe('apple_podcasts');
+  });
+
+  it('should detect Spotify', () => {
+    expect(detectPlatform('Spotify/8.8.0 iOS/16.6 (iPhone14,2)')).toBe('spotify');
+  });
+
+  it('should detect Amazon Music', () => {
+    expect(detectPlatform('AmazonMusic/22.15.0 iOS/16.6 (iPhone14,2)')).toBe('amazon_music');
+  });
+
+  it('should detect Google Podcasts', () => {
+    expect(detectPlatform('GooglePodcasts/2.0 Android/12')).toBe('google_podcasts');
+  });
+
+  it('should detect Overcast', () => {
+    expect(detectPlatform('Overcast/3.0 (+http://overcast.fm/)')).toBe('overcast');
+  });
+
+  it('should detect Pocket Casts', () => {
+    expect(detectPlatform('PocketCasts/1.0')).toBe('pocket_casts');
+  });
+
+  it('should detect Castro', () => {
+    expect(detectPlatform('Castro/2023.7 (+https://castro.fm)')).toBe('castro');
+  });
+
+  it('should detect Podcast Addict', () => {
+    expect(detectPlatform('Podcast Addict/v2023.2 - 1 user')).toBe('podcast_addict');
+  });
+
+  it('should detect web browser from Chrome user agent', () => {
+    expect(detectPlatform('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')).toBe('web_browser');
+  });
+
+  it('should return other for null user agent', () => {
+    expect(detectPlatform(null)).toBe('other');
+  });
+
+  it('should return other for unknown user agent', () => {
+    expect(detectPlatform('SomeUnknownApp/1.0')).toBe('other');
+  });
+});
+
+describe('Platform Display Names', () => {
+  it('should return correct display name for apple_podcasts', () => {
+    expect(getPlatformDisplayName('apple_podcasts')).toBe('Apple Podcasts');
+  });
+
+  it('should return correct display name for spotify', () => {
+    expect(getPlatformDisplayName('spotify')).toBe('Spotify');
+  });
+
+  it('should return correct display name for web_browser', () => {
+    expect(getPlatformDisplayName('web_browser')).toBe('Web Browser');
+  });
+
+  it('should return correct display name for other', () => {
+    expect(getPlatformDisplayName('other')).toBe('Other');
   });
 });
 

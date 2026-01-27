@@ -195,6 +195,25 @@ const lang = getLangFromUrl(Astro.url);
         opacity: 0;
         animation: hero-subtitle 0.5s ease-out 0.8s forwards;
       }
+
+      @keyframes hero-waveform {
+        0% {
+          opacity: 0;
+          transform: scale(0) rotate(-10deg);
+        }
+        70% {
+          transform: scale(1.2) rotate(5deg);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) rotate(0deg);
+        }
+      }
+
+      .hero-waveform {
+        opacity: 0;
+        animation: hero-waveform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards;
+      }
     </style>
   </head>
   <body class="min-h-screen bg-base-100">
@@ -218,7 +237,7 @@ const lang = getLangFromUrl(Astro.url);
       <img src="/top_hero_2.png" alt="" class="absolute bottom-0 right-0 w-1/5 max-w-md object-contain pointer-events-none" />
       <div class="relative z-10 px-2">
         <h1 class="text-3xl sm:text-4xl lg:text-6xl font-bold mb-6 leading-tight hero-title">
-          番組運営を、<br class="sm:hidden" />もっとシンプルに。
+          番組運営を、<br class="sm:hidden" />もっとシンプルに<svg class="inline-block w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 ml-1 align-middle text-primary hero-waveform" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="9" width="2" height="6" rx="1" /><rect x="6" y="6" width="2" height="12" rx="1" /><rect x="10" y="4" width="2" height="16" rx="1" /><rect x="14" y="7" width="2" height="10" rx="1" /><rect x="18" y="10" width="2" height="4" rx="1" /></svg>
         </h1>
         <p class="text-base sm:text-xl text-base-content/70 mb-8 max-w-2xl mx-auto leading-relaxed hero-subtitle">
           Spotify、Apple Podcasts、<br class="sm:hidden" />Amazon Music、YouTube Music など<br class="hidden sm:inline" />
@@ -297,7 +316,7 @@ const lang = getLangFromUrl(Astro.url);
     <!-- Features -->
     <section class="min-h-screen flex flex-col justify-center py-12 sm:py-16 px-4 sm:px-6 lg:px-12 bg-base-100">
       <div class="max-w-6xl mx-auto w-full">
-        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">主な機能</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12">PODDOCKの特徴</h2>
         <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
           <div class="card bg-base-100 fade-in-card">
             <div class="card-body p-4 sm:p-6">
@@ -329,7 +348,7 @@ const lang = getLangFromUrl(Astro.url);
                 </svg>
               </div>
               <h3 class="card-title text-base sm:text-lg">分析ダッシュボード</h3>
-              <p class="text-sm sm:text-base text-base-content/70">再生数、リスナー数、人気エピソードをリアルタイムで確認。</p>
+              <p class="text-sm sm:text-base text-base-content/70">再生数、人気エピソードをリアルタイムで確認。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
@@ -339,8 +358,8 @@ const lang = getLangFromUrl(Astro.url);
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                 </svg>
               </div>
-              <h3 class="card-title text-base sm:text-lg">プライベート配信</h3>
-              <p class="text-sm sm:text-base text-base-content/70">社内向け、有料会員向けなど限定配信にも対応。</p>
+              <h3 class="card-title text-base sm:text-lg">限定公開RSS</h3>
+              <p class="text-sm sm:text-base text-base-content/70">トークン付きURLで、特定の人だけに配信。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
@@ -350,8 +369,8 @@ const lang = getLangFromUrl(Astro.url);
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
                 </svg>
               </div>
-              <h3 class="card-title text-base sm:text-lg">カスタマイズ</h3>
-              <p class="text-sm sm:text-base text-base-content/70">番組ページをブランドに合わせてカスタマイズ。</p>
+              <h3 class="card-title text-base sm:text-lg">番組ウェブサイト</h3>
+              <p class="text-sm sm:text-base text-base-content/70">番組専用の公開ページを自動生成。リスナーへの案内に。</p>
             </div>
           </div>
           <div class="card bg-base-100 fade-in-card">
@@ -366,6 +385,7 @@ const lang = getLangFromUrl(Astro.url);
             </div>
           </div>
         </div>
+        <p class="text-center text-lg sm:text-xl font-medium text-primary mt-8 sm:mt-12">...and more! <span class="text-base-content/70">新機能を随時追加予定</span></p>
       </div>
     </section>
 
@@ -405,6 +425,10 @@ const lang = getLangFromUrl(Astro.url);
                 <li class="flex items-center gap-2">
                   <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                   <span><strong>10,000</strong> 再生/月</span>
+                </li>
+                <li class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>基本アナリティクス<span class="badge badge-success badge-xs ml-2">リリース記念</span></span>
                 </li>
               </ul>
               <div class="mt-auto pt-6">
