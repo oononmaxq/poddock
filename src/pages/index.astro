@@ -11,12 +11,12 @@ const lang = getLangFromUrl(Astro.url);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>PODDOCK - 全ての配信を、まとめて管理</title>
-    <meta name="description" content="音声ファイルをアップロードするだけ。RSSフィードと公開ページを自動生成、面倒な設定は不要です。" />
+    <title>PODDOCK（ポッドドック） - ポッドキャスト配信をまとめて管理</title>
+    <meta name="description" content="ポッドキャスト配信をまとめて管理。Spotify、Apple Podcasts、Amazon Music、YouTube Musicなど主要プラットフォームへ一括配信。RSSフィード自動生成、面倒な設定は不要。" />
 
     <!-- OGP -->
-    <meta property="og:title" content="PODDOCK - 全ての配信を、まとめて管理" />
-    <meta property="og:description" content="音声ファイルをアップロードするだけ。RSSフィードと公開ページを自動生成、面倒な設定は不要です。" />
+    <meta property="og:title" content="PODDOCK（ポッドドック） - ポッドキャスト配信をまとめて管理" />
+    <meta property="og:description" content="ポッドキャスト配信をまとめて管理。Spotify、Apple Podcasts、Amazon Musicなど主要プラットフォームへ一括配信。RSSフィード自動生成、面倒な設定は不要。" />
     <meta property="og:image" content="https://poddock.io/logo.png" />
     <meta property="og:url" content="https://poddock.io" />
     <meta property="og:type" content="website" />
@@ -25,9 +25,40 @@ const lang = getLangFromUrl(Astro.url);
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="PODDOCK - 全ての配信を、まとめて管理" />
-    <meta name="twitter:description" content="音声ファイルをアップロードするだけ。RSSフィードと公開ページを自動生成、面倒な設定は不要です。" />
+    <meta name="twitter:title" content="PODDOCK（ポッドドック） - ポッドキャスト配信をまとめて管理" />
+    <meta name="twitter:description" content="ポッドキャスト配信をまとめて管理。Spotify、Apple Podcasts、Amazon Musicなど主要プラットフォームへ一括配信。RSSフィード自動生成、面倒な設定は不要。" />
     <meta name="twitter:image" content="https://poddock.io/logo.png" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://poddock.io/" />
+
+    <!-- 構造化データ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "PODDOCK（ポッドドック）",
+      "alternateName": ["ポッドドック", "poddock", "ポッドキャスト配信"],
+      "url": "https://poddock.io",
+      "description": "ポッドキャスト配信をまとめて管理。Spotify、Apple Podcasts、Amazon Music、YouTube Musicなど主要プラットフォームへ一括配信。"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "PODDOCK",
+      "alternateName": "ポッドドック",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "description": "ポッドキャスト配信管理サービス。複数プラットフォームへの一括配信、RSSフィード自動生成、アナリティクス機能を提供。"
+    }
+    </script>
     <script is:inline>
       const savedTheme = localStorage.getItem('theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
