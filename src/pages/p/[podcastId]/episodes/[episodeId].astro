@@ -3,6 +3,7 @@ import '../../../../styles/global.css';
 import { createDb } from '../../../../infrastructure/db/client';
 import { podcasts, episodes, assets } from '../../../../infrastructure/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { DEFAULT_THEME_COLOR } from '../../../../constants/brand';
 
 const { podcastId, episodeId } = Astro.params;
 const db = createDb(Astro.locals.runtime.env.DB);
@@ -75,7 +76,7 @@ if (episodeData.audio_asset_id) {
 
 const episode = { ...episodeData, audio };
 
-const themeColor = podcast.theme_color || '#6366f1';
+const themeColor = podcast.theme_color || DEFAULT_THEME_COLOR;
 const themeMode = podcast.theme_mode || 'light';
 const locale = podcast.language === 'ja' ? 'ja-JP' : 'en-US';
 const baseUrl = Astro.locals.runtime.env.BASE_URL || 'https://poddock.io';
