@@ -9,7 +9,7 @@ interface Episode {
   id: string;
   title: string;
   description: string | null;
-  status: 'draft' | 'published';
+  status: 'draft' | 'scheduled' | 'published';
   published_at: string | null;
   audio: { content_type: string; byte_size: number } | null;
 }
@@ -34,7 +34,7 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<'draft' | 'published'>('draft');
+  const [status, setStatus] = useState<'draft' | 'scheduled' | 'published'>('draft');
   const [publishedAt, setPublishedAt] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -69,9 +69,18 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
 
-    if (status === 'published' && !publishedAt) {
+    if ((status === 'published' || status === 'scheduled') && !publishedAt) {
       alert(t('episode.publishDateRequiredError'));
       return;
+    }
+
+    // Validate scheduled date is in the future
+    if (status === 'scheduled' && publishedAt) {
+      const publishDate = new Date(publishedAt);
+      if (publishDate <= new Date()) {
+        alert(t('episode.scheduledDateMustBeFuture'));
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -82,7 +91,7 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
       status,
     };
 
-    if (status === 'published') {
+    if (status === 'published' || status === 'scheduled') {
       data.published_at = new Date(publishedAt).toISOString();
     }
 
@@ -178,7 +187,7 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
               <label className="label">
                 <span className="label-text">{t('episode.form.status')}</span>
               </label>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <label className="label cursor-pointer gap-2">
                   <input
                     type="radio"
@@ -188,6 +197,16 @@ export function EpisodeEdit({ podcastId, episodeId }: EpisodeEditProps) {
                     onChange={() => setStatus('draft')}
                   />
                   <span className="label-text">{t('episode.form.draft')}</span>
+                </label>
+                <label className="label cursor-pointer gap-2">
+                  <input
+                    type="radio"
+                    name="status"
+                    className="radio radio-info"
+                    checked={status === 'scheduled'}
+                    onChange={() => setStatus('scheduled')}
+                  />
+                  <span className="label-text">{t('episode.form.scheduled')}</span>
                 </label>
                 <label className="label cursor-pointer gap-2">
                   <input

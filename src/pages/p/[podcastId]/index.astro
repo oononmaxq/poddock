@@ -4,6 +4,8 @@ import { createDb } from '../../../infrastructure/db/client';
 import { podcasts, episodes as episodesTable, assets } from '../../../infrastructure/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { DEFAULT_THEME_COLOR } from '../../../constants/brand';
+import { EpisodeCard } from '../../../presentation/ui/components/EpisodeCard';
+import { FixedAudioPlayer } from '../../../presentation/ui/components/FixedAudioPlayer';
 
 const { podcastId } = Astro.params;
 const db = createDb(Astro.locals.runtime.env.DB);
@@ -42,7 +44,7 @@ if (podcastData.cover_image_asset_id) {
 
 const podcast = { ...podcastData, cover_image: coverImage };
 
-// Fetch episodes
+// Fetch episodes with audio URL
 const episodeList = await db
   .select({
     id: episodesTable.id,
@@ -50,18 +52,47 @@ const episodeList = await db
     description: episodesTable.description,
     published_at: episodesTable.publishedAt,
     duration_seconds: episodesTable.durationSeconds,
+    audio_asset_id: episodesTable.audioAssetId,
   })
   .from(episodesTable)
   .where(and(eq(episodesTable.podcastId, podcastId!), eq(episodesTable.status, 'published')))
   .orderBy(desc(episodesTable.publishedAt));
 
-const episodes = episodeList;
+// Get audio URLs for each episode
+const episodesWithAudio = await Promise.all(
+  episodeList.map(async (ep) => {
+    let audioUrl = null;
+    if (ep.audio_asset_id) {
+      const audio = await db
+        .select({ public_url: assets.publicUrl })
+        .from(assets)
+        .where(eq(assets.id, ep.audio_asset_id))
+        .get();
+      audioUrl = audio?.public_url || null;
+    }
+    return {
+      id: ep.id,
+      title: ep.title,
+      description: ep.description || undefined,
+      publishedAt: ep.published_at!,
+      durationSeconds: ep.duration_seconds || undefined,
+      audioUrl: audioUrl || undefined,
+    };
+  })
+);
 
 const themeColor = podcast.theme_color || DEFAULT_THEME_COLOR;
 const themeMode = podcast.theme_mode || 'light';
 const baseUrl = Astro.locals.runtime.env.BASE_URL || 'https://poddock.io';
 const pageUrl = `${baseUrl}/p/${podcastId}`;
 const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
+
+const podcastForCard = {
+  id: podcast.id,
+  title: podcast.title,
+  coverImageUrl: podcast.cover_image?.public_url,
+  language: podcast.language,
+};
 ---
 
 <!doctype html>
@@ -91,11 +122,17 @@ const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
       .theme-primary { color: var(--themeColor); }
       .theme-bg { background-color: var(--themeColor); }
       .theme-border { border-color: var(--themeColor); }
+
+      /* Playing animation */
+      @keyframes equalizer {
+        0%, 100% { height: 40%; }
+        50% { height: 100%; }
+      }
     </style>
   </head>
-  <body class="min-h-screen bg-base-100">
+  <body class="min-h-screen bg-base-100 pb-24">
     <!-- Header -->
-    <header class="navbar bg-base-200 border-b border-base-300 px-4 lg:px-8">
+    <header class="navbar bg-base-200 border-b border-base-300 px-4 lg:px-8 sticky top-0 z-40">
       <div class="flex-1">
         <a href={`/p/${podcastId}`} class="text-xl font-bold">{podcast.title}</a>
       </div>
@@ -129,34 +166,20 @@ const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
       <section>
         <h2 class="text-2xl font-bold mb-6">エピソード</h2>
 
-        {episodes.length === 0 ? (
+        {episodesWithAudio.length === 0 ? (
           <div class="card bg-base-200">
             <div class="card-body text-center py-12">
               <p class="text-base-content/70">エピソードはまだありません</p>
             </div>
           </div>
         ) : (
-          <div class="space-y-4">
-            {episodes.map((episode: any) => (
-              <a
-                href={`/p/${podcastId}/episodes/${episode.id}`}
-                class="card bg-base-200 hover:bg-base-300 transition-colors block"
-              >
-                <div class="card-body py-4">
-                  <h3 class="font-semibold text-lg">{episode.title}</h3>
-                  <p class="text-sm text-base-content/70">
-                    {new Date(episode.published_at).toLocaleDateString(podcast.language === 'ja' ? 'ja-JP' : 'en-US')}
-                    {episode.duration_seconds && (
-                      <span class="ml-2">
-                        {Math.floor(episode.duration_seconds / 60)}分
-                      </span>
-                    )}
-                  </p>
-                  {episode.description && (
-                    <p class="text-base-content/80 line-clamp-2 mt-2">{episode.description}</p>
-                  )}
-                </div>
-              </a>
+          <div class="space-y-3">
+            {episodesWithAudio.map((episode) => (
+              <EpisodeCard
+                client:load
+                episode={episode}
+                podcast={podcastForCard}
+              />
             ))}
           </div>
         )}
@@ -165,7 +188,10 @@ const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
 
     <!-- Footer -->
     <footer class="py-8 px-4 text-center text-base-content/60 border-t border-base-200">
-      <p>Powered by <a href="/" class="link">PodDock</a></p>
+      <p class="flex items-center justify-center gap-2">Powered by <a href="/"><img src="/header_logo.png" alt="PODDOCK" class="h-5 inline-block" /></a></p>
     </footer>
+
+    <!-- Fixed Audio Player -->
+    <FixedAudioPlayer client:load />
   </body>
 </html>

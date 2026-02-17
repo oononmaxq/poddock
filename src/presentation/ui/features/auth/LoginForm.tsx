@@ -125,9 +125,9 @@ export function LoginForm() {
               </div>
             </div>
 
-            <h1 className="card-title text-2xl font-bold justify-center mb-4">
-              PODDOCK
-            </h1>
+            <div className="flex justify-center mb-4">
+              <img src="/header_logo.png" alt="PODDOCK" className="h-12" />
+            </div>
             <p className="text-center text-base-content/70 mb-6">
               {t("login.subtitle")}
             </p>

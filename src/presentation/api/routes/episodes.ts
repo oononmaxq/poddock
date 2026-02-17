@@ -12,7 +12,7 @@ import { checkEpisodeLimit, checkEpisodeDuration } from '@domain/plan/limits';
 const createEpisodeSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().optional().nullable(),
-  status: z.enum(['draft', 'published']).default('draft'),
+  status: z.enum(['draft', 'scheduled', 'published']).default('draft'),
   published_at: z.string().datetime().optional().nullable(),
 });
 
@@ -42,7 +42,7 @@ episodeRoutes.get('/', async (c) => {
   }
 
   let results;
-  if (status === 'draft' || status === 'published') {
+  if (status === 'draft' || status === 'scheduled' || status === 'published') {
     results = await db
       .select()
       .from(episodes)
@@ -124,16 +124,16 @@ episodeRoutes.post('/', async (c) => {
     ]);
   }
 
-  // Validate publish conditions
-  if (data.status === 'published') {
+  // Validate publish/schedule conditions
+  if (data.status === 'published' || data.status === 'scheduled') {
     if (!data.published_at) {
-      throw new AppError(422, 'publish_conditions_not_met', 'published_at is required for published status', [
+      throw new AppError(422, 'publish_conditions_not_met', 'published_at is required for published/scheduled status', [
         { field: 'published_at', reason: 'required' },
       ]);
     }
-    // audio_asset_id will be required when trying to publish
+    // audio_asset_id will be required when trying to publish/schedule
     // but on creation it's not set yet, so we allow creating as draft first
-    throw new AppError(422, 'publish_conditions_not_met', 'Cannot create episode as published without audio', [
+    throw new AppError(422, 'publish_conditions_not_met', 'Cannot create episode as published/scheduled without audio', [
       { field: 'audio_asset_id', reason: 'required' },
     ]);
   }
@@ -231,11 +231,11 @@ episodeRoutes.patch('/:episodeId', async (c) => {
     throw new AppError(404, 'not_found', 'Episode not found');
   }
 
-  // Check publish conditions
+  // Check publish/schedule conditions
   const newStatus = data.status ?? episode.status;
   const newPublishedAt = data.published_at ?? episode.publishedAt;
 
-  if (newStatus === 'published') {
+  if (newStatus === 'published' || newStatus === 'scheduled') {
     const errors: Array<{ field: string; reason: string }> = [];
     if (!newPublishedAt) {
       errors.push({ field: 'published_at', reason: 'required' });
@@ -243,8 +243,18 @@ episodeRoutes.patch('/:episodeId', async (c) => {
     if (!episode.audioAssetId) {
       errors.push({ field: 'audio_asset_id', reason: 'required' });
     }
+    // For scheduled, validate that publish date is in the future
+    if (newStatus === 'scheduled' && newPublishedAt) {
+      const publishDate = new Date(newPublishedAt);
+      if (publishDate <= new Date()) {
+        errors.push({ field: 'published_at', reason: 'must_be_future' });
+      }
+    }
     if (errors.length > 0) {
-      throw new AppError(422, 'publish_conditions_not_met', 'Cannot publish episode without required fields', errors);
+      const message = newStatus === 'scheduled'
+        ? 'Cannot schedule episode without required fields'
+        : 'Cannot publish episode without required fields';
+      throw new AppError(422, 'publish_conditions_not_met', message, errors);
     }
   }
 

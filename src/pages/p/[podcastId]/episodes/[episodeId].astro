@@ -4,6 +4,8 @@ import { createDb } from '../../../../infrastructure/db/client';
 import { podcasts, episodes, assets } from '../../../../infrastructure/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { DEFAULT_THEME_COLOR } from '../../../../constants/brand';
+import { FixedAudioPlayer } from '../../../../presentation/ui/components/FixedAudioPlayer';
+import { EpisodeAutoPlay } from '../../../../presentation/ui/components/EpisodeAutoPlay';
 
 const { podcastId, episodeId } = Astro.params;
 const db = createDb(Astro.locals.runtime.env.DB);
@@ -83,6 +85,17 @@ const baseUrl = Astro.locals.runtime.env.BASE_URL || 'https://poddock.io';
 const pageUrl = `${baseUrl}/p/${podcastId}/episodes/${episodeId}`;
 const ogImage = podcast.cover_image?.public_url || `${baseUrl}/logo.png`;
 const ogDescription = episode.description || podcast.description || '';
+
+// Episode data for auto-play
+const episodeForPlayer = {
+  id: episode.id,
+  title: episode.title,
+  podcastId: podcast.id,
+  podcastTitle: podcast.title,
+  audioUrl: episode.audio?.public_url || '',
+  coverImageUrl: podcast.cover_image?.public_url,
+  durationSeconds: episode.duration_seconds || undefined,
+};
 ---
 
 <!doctype html>
@@ -117,9 +130,9 @@ const ogDescription = episode.description || podcast.description || '';
       .theme-border { border-color: var(--themeColor); }
     </style>
   </head>
-  <body class="min-h-screen bg-base-100">
+  <body class="min-h-screen bg-base-100 pb-24">
     <!-- Header -->
-    <header class="navbar bg-base-200 border-b border-base-300 px-4 lg:px-8">
+    <header class="navbar bg-base-200 border-b border-base-300 px-4 lg:px-8 sticky top-0 z-40">
       <div class="flex-1">
         <a href={`/p/${podcastId}`} class="text-xl font-bold">{podcast.title}</a>
       </div>
@@ -148,27 +161,20 @@ const ogDescription = episode.description || podcast.description || '';
         <div class="flex-1 text-center md:text-left">
           <h1 class="text-2xl font-bold mb-2">{episode.title}</h1>
           <p class="text-base-content/70">
-            {new Date(episode.published_at).toLocaleDateString(locale)}
+            {new Date(episode.published_at!).toLocaleDateString(locale)}
             {episode.duration_seconds && (
               <span class="ml-2">
                 · {Math.floor(episode.duration_seconds / 60)}分
               </span>
             )}
           </p>
+
+          {/* Play button */}
+          {episode.audio?.public_url && (
+            <EpisodeAutoPlay client:load episode={episodeForPlayer} autoPlay={false} />
+          )}
         </div>
       </div>
-
-      <!-- Audio Player -->
-      {episode.audio?.public_url && (
-        <div class="mb-8">
-          <audio
-            controls
-            class="w-full"
-            src={episode.audio.public_url}
-            preload="metadata"
-          />
-        </div>
-      )}
 
       <!-- Show Notes -->
       {episode.description && (
@@ -183,7 +189,10 @@ const ogDescription = episode.description || podcast.description || '';
 
     <!-- Footer -->
     <footer class="py-8 px-4 text-center text-base-content/60 border-t border-base-200">
-      <p>Powered by <a href="/" class="link">PODDOCK</a></p>
+      <p class="flex items-center justify-center gap-2">Powered by <a href="/"><img src="/header_logo.png" alt="PODDOCK" class="h-5 inline-block" /></a></p>
     </footer>
+
+    <!-- Fixed Audio Player -->
+    <FixedAudioPlayer client:load />
   </body>
 </html>

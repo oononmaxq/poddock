@@ -6,7 +6,7 @@ import { Loading } from "../../components/Loading";
 interface Episode {
   id: string;
   title: string;
-  status: "draft" | "published";
+  status: "draft" | "scheduled" | "published";
   published_at: string | null;
   audio: {
     public_url: string;
@@ -81,9 +81,22 @@ function EpisodeCard({
   const { t, lang } = useI18n();
   const [updating, setUpdating] = useState(false);
   const locale = lang === "ja" ? "ja-JP" : "en-US";
-  const publishedDate = episode.published_at
-    ? new Date(episode.published_at).toLocaleDateString(locale)
-    : t("episode.unpublished");
+
+  // Format date based on status
+  const getDateDisplay = () => {
+    if (!episode.published_at) return t("episode.unpublished");
+    const date = new Date(episode.published_at);
+    if (episode.status === "scheduled") {
+      // Show full date and time for scheduled episodes
+      return date.toLocaleString(locale, {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " " + t("episode.scheduledSuffix");
+    }
+    return date.toLocaleDateString(locale);
+  };
 
   const handleToggleStatus = async (e: Event) => {
     e.preventDefault();
@@ -130,32 +143,43 @@ function EpisodeCard({
           className="flex-1 min-w-0"
         >
           <h3 className="font-medium truncate">{episode.title}</h3>
-          <p className="text-sm text-base-content/70">{publishedDate}</p>
+          <p className="text-sm text-base-content/70">{getDateDisplay()}</p>
         </a>
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Status Toggle */}
-          <label
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span
-              className={`text-xs ${episode.status === "draft" ? "text-base-content/70" : "text-base-content/40"}`}
-            >
-              {t("episode.toggleDraft")}
+          {/* Status Display */}
+          {episode.status === "scheduled" ? (
+            // Scheduled: Show badge instead of toggle
+            <span className="badge badge-info gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {t("badge.scheduled")}
             </span>
-            <input
-              type="checkbox"
-              className={`toggle toggle-sm toggle-primary ${updating ? "opacity-50" : ""}`}
-              checked={episode.status === "published"}
-              onChange={handleToggleStatus}
-              disabled={updating}
-            />
-            <span
-              className={`text-xs ${episode.status === "published" ? "text-primary" : "text-base-content/40"}`}
+          ) : (
+            // Draft/Published: Show toggle
+            <label
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
             >
-              {t("episode.togglePublish")}
-            </span>
-          </label>
+              <span
+                className={`text-xs ${episode.status === "draft" ? "text-base-content/70" : "text-base-content/40"}`}
+              >
+                {t("episode.toggleDraft")}
+              </span>
+              <input
+                type="checkbox"
+                className={`toggle toggle-sm toggle-primary ${updating ? "opacity-50" : ""}`}
+                checked={episode.status === "published"}
+                onChange={handleToggleStatus}
+                disabled={updating}
+              />
+              <span
+                className={`text-xs ${episode.status === "published" ? "text-primary" : "text-base-content/40"}`}
+              >
+                {t("episode.togglePublish")}
+              </span>
+            </label>
+          )}
           {episode.audio && (
             <>
               <div className="w-px h-6 bg-base-300" />

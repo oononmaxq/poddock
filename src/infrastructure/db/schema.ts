@@ -73,7 +73,7 @@ export const episodes = sqliteTable('episodes', {
     .references(() => podcasts.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   description: text('description'),
-  status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+  status: text('status', { enum: ['draft', 'scheduled', 'published'] }).notNull().default('draft'),
   publishedAt: text('published_at'),
   audioAssetId: text('audio_asset_id').references(() => assets.id),
   durationSeconds: integer('duration_seconds'),
