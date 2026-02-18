@@ -1,0 +1,27 @@
+name = "poddock-cron"
+main = "index.ts"
+compatibility_date = "2024-12-01"
+
+# Cron Trigger - 毎分実行
+[triggers]
+crons = ["* * * * *"]
+
+# ローカル開発用
+[[d1_databases]]
+binding = "DB"
+database_name = "poddock-db"
+database_id = "local"
+
+# Staging環境
+[env.staging]
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "poddock-db-staging"
+database_id = "b63d5c3b-b84d-4ff0-bfbd-68fced192af8"
+
+# Production環境
+[env.production]
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "poddock-db-production"
+database_id = "ce382f1b-00a4-403b-952c-d3b7d4685b47"

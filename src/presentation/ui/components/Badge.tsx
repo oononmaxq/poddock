@@ -27,13 +27,15 @@ export function VisibilityBadge({ visibility }: { visibility: 'public' | 'privat
   );
 }
 
-export function StatusBadge({ status }: { status: 'draft' | 'published' }) {
+export function StatusBadge({ status }: { status: 'draft' | 'scheduled' | 'published' }) {
   const { t } = useI18n();
-  return (
-    <Badge type={status === 'published' ? 'success' : 'warning'}>
-      {status === 'published' ? t('badge.published') : t('badge.draft')}
-    </Badge>
-  );
+  const config: Record<string, { type: BadgeProps['type']; labelKey: 'badge.draft' | 'badge.scheduled' | 'badge.published' }> = {
+    draft: { type: 'warning', labelKey: 'badge.draft' },
+    scheduled: { type: 'info', labelKey: 'badge.scheduled' },
+    published: { type: 'success', labelKey: 'badge.published' },
+  };
+  const item = config[status] || config.draft;
+  return <Badge type={item.type}>{t(item.labelKey)}</Badge>;
 }
 
 export function DistributionBadge({ status }: { status: string }) {

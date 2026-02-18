@@ -7,3 +7,23 @@
 body {
   font-family: 'Space Grotesk', 'Zen Kaku Gothic New', sans-serif;
 }
+
+/* Audio player animations */
+@keyframes equalizer {
+  0%, 100% { height: 40%; }
+  50% { height: 100%; }
+}
+
+.animate-equalizer {
+  animation: equalizer 0.5s ease-in-out infinite;
+}
+
+.animate-equalizer-delay-1 {
+  animation: equalizer 0.5s ease-in-out infinite;
+  animation-delay: 0.15s;
+}
+
+.animate-equalizer-delay-2 {
+  animation: equalizer 0.5s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
