@@ -145,6 +145,24 @@ export const rssSources = sqliteTable('rss_sources', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// RSS Source Snapshot - RSS解析済みスナップショット（一覧表示用）
+export const rssSourceSnapshots = sqliteTable('rss_source_snapshots', {
+  sourceId: text('source_id')
+    .primaryKey()
+    .references(() => rssSources.id, { onDelete: 'cascade' }),
+  feedTitle: text('feed_title'),
+  feedDescription: text('feed_description'),
+  feedImageUrl: text('feed_image_url'),
+  feedAuthor: text('feed_author'),
+  feedLanguage: text('feed_language'),
+  categoriesJson: text('categories_json').notNull().default('[]'),
+  episodeCount: integer('episode_count').notNull().default(0),
+  latestPublishedAt: text('latest_published_at'),
+  lastFetchedAt: text('last_fetched_at').notNull(),
+  fetchError: text('fetch_error'),
+  updatedAt: text('updated_at').notNull(),
+});
+
 // ListeningHistory - ユーザーごとの再生履歴
 export const listeningHistories = sqliteTable('listening_histories', {
   id: text('id').primaryKey(),
@@ -241,6 +259,9 @@ export type NewMagicLink = typeof magicLinks.$inferInsert;
 
 export type RssSource = typeof rssSources.$inferSelect;
 export type NewRssSource = typeof rssSources.$inferInsert;
+
+export type RssSourceSnapshot = typeof rssSourceSnapshots.$inferSelect;
+export type NewRssSourceSnapshot = typeof rssSourceSnapshots.$inferInsert;
 
 export type ListeningHistory = typeof listeningHistories.$inferSelect;
 export type NewListeningHistory = typeof listeningHistories.$inferInsert;
