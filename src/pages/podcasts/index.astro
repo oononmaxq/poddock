@@ -2,125 +2,18 @@
 import '../../styles/global.css';
 import { ClientRouter, ViewTransitions } from 'astro:transitions';
 import { createDb } from '../../infrastructure/db/client';
-import { rssSources } from '../../infrastructure/db/schema';
-import { fetchAndParseRss } from '../../infrastructure/rss/feed-parser';
-import { eq } from 'drizzle-orm';
+import { rssSourceSnapshots, rssSources } from '../../infrastructure/db/schema';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { FixedAudioPlayer } from '../../presentation/ui/components/FixedAudioPlayer';
+import {
+  getCanonicalCategories,
+  normalizeCategory,
+  parseCategoriesJson,
+  type CanonicalCategory,
+} from '../../application/podcast-discovery/categories';
 
 const db = createDb(Astro.locals.runtime.env.DB);
-const CATEGORY_CANONICAL = [
-  'ビジネス',
-  'キャリア',
-  'テクノロジー',
-  '言語',
-  '暮らし',
-  '教育',
-  'ニュース',
-  '健康',
-  '科学',
-  '社会・文化',
-  'エンタメ',
-  '音楽',
-  'スポーツ',
-  'コメディ',
-] as const;
-type CanonicalCategory = (typeof CATEGORY_CANONICAL)[number];
-const CATEGORY_ALIAS_MAP: Record<string, CanonicalCategory> = {
-  business: 'ビジネス',
-  entrepreneurship: 'ビジネス',
-  marketing: 'ビジネス',
-  economy: 'ビジネス',
-  'investing': 'ビジネス',
-  'management': 'ビジネス',
-  ビジネス: 'ビジネス',
-  キャリア: 'キャリア',
-  career: 'キャリア',
-  careers: 'キャリア',
-  jobs: 'キャリア',
-  technology: 'テクノロジー',
-  'tech news': 'テクノロジー',
-  'software how-to': 'テクノロジー',
-  gadgets: 'テクノロジー',
-  tech: 'テクノロジー',
-  テクノロジー: 'テクノロジー',
-  language: '言語',
-  languages: '言語',
-  'language learning': '言語',
-  言語: '言語',
-  語学: '言語',
-  leisure: '暮らし',
-  'home & garden': '暮らし',
-  hobbies: '暮らし',
-  crafts: '暮らし',
-  games: '暮らし',
-  parenting: '暮らし',
-  'kids & family': '暮らし',
-  'kids and family': '暮らし',
-  'places & travel': '暮らし',
-  travel: '暮らし',
-  lifestyle: '暮らし',
-  暮らし: '暮らし',
-  生活: '暮らし',
-  education: '教育',
-  'how to': '教育',
-  courses: '教育',
-  'self-improvement': '教育',
-  教育: '教育',
-  学習: '教育',
-  news: 'ニュース',
-  'daily news': 'ニュース',
-  politics: 'ニュース',
-  'news commentary': 'ニュース',
-  ニュース: 'ニュース',
-  health: '健康',
-  'health & fitness': '健康',
-  'mental health': '健康',
-  fitness: '健康',
-  medicine: '健康',
-  wellness: '健康',
-  健康: '健康',
-  science: '科学',
-  astronomy: '科学',
-  nature: '科学',
-  科学: '科学',
-  'society & culture': '社会・文化',
-  'society and culture': '社会・文化',
-  documentary: '社会・文化',
-  philosophy: '社会・文化',
-  relationships: '社会・文化',
-  社会: '社会・文化',
-  文化: '社会・文化',
-  '社会・文化': '社会・文化',
-  entertainment: 'エンタメ',
-  'tv & film': 'エンタメ',
-  'tv and film': 'エンタメ',
-  fiction: 'エンタメ',
-  'true crime': 'エンタメ',
-  anime: 'エンタメ',
-  manga: 'エンタメ',
-  エンタメ: 'エンタメ',
-  娯楽: 'エンタメ',
-  music: '音楽',
-  音楽: '音楽',
-  sports: 'スポーツ',
-  'sports news': 'スポーツ',
-  football: 'スポーツ',
-  baseball: 'スポーツ',
-  basketball: 'スポーツ',
-  golf: 'スポーツ',
-  スポーツ: 'スポーツ',
-  comedy: 'コメディ',
-  'comedy interviews': 'コメディ',
-  improv: 'コメディ',
-  'stand-up': 'コメディ',
-  コメディ: 'コメディ',
-};
-const normalizeCategory = (raw: string): CanonicalCategory | null => {
-  const trimmed = raw.trim();
-  if (!trimmed || /^\d+$/.test(trimmed)) return null;
-  const key = trimmed.toLowerCase();
-  return CATEGORY_ALIAS_MAP[key] ?? null;
-};
+const CATEGORY_CANONICAL = getCanonicalCategories();
 const selectedCategoryParam = Astro.url.searchParams.get('category')?.trim() || null;
 const selectedCategory = selectedCategoryParam && CATEGORY_CANONICAL.includes(selectedCategoryParam as CanonicalCategory)
   ? (selectedCategoryParam as CanonicalCategory)
@@ -135,33 +28,76 @@ const userAgent = Astro.request.headers.get('user-agent')?.toLowerCase() || '';
 const isMobileDevice = /iphone|ipod|android.+mobile|windows phone/.test(userAgent);
 const PAGE_SIZE = isMobileDevice ? 12 : 15;
 
-const sources = await db
-  .select({
-    id: rssSources.id,
-    name: rssSources.name,
-    feedUrl: rssSources.feedUrl,
-  })
+const selectFields = {
+  id: rssSources.id,
+  name: rssSources.name,
+  feedUrl: rssSources.feedUrl,
+  updatedAt: rssSources.updatedAt,
+  feedTitle: rssSourceSnapshots.feedTitle,
+  feedDescription: rssSourceSnapshots.feedDescription,
+  feedImageUrl: rssSourceSnapshots.feedImageUrl,
+  feedAuthor: rssSourceSnapshots.feedAuthor,
+  feedLanguage: rssSourceSnapshots.feedLanguage,
+  categoriesJson: rssSourceSnapshots.categoriesJson,
+  episodeCount: rssSourceSnapshots.episodeCount,
+  latestPublishedAt: rssSourceSnapshots.latestPublishedAt,
+};
+
+type SourceRecord = {
+  id: string;
+  name: string | null;
+  feedUrl: string;
+  updatedAt: string;
+  feedTitle: string | null;
+  feedDescription: string | null;
+  feedImageUrl: string | null;
+  feedAuthor: string | null;
+  feedLanguage: string | null;
+  categoriesJson: string | null;
+  episodeCount: number | null;
+  latestPublishedAt: string | null;
+};
+
+const mapSourceRow = (row: SourceRecord) => {
+  const snapshotCategories = parseCategoriesJson(row.categoriesJson);
+  const normalizedCategories = Array.from(
+    new Set(
+      snapshotCategories
+        .map(normalizeCategory)
+        .filter((category): category is CanonicalCategory => category !== null)
+    )
+  );
+  return {
+    id: row.id,
+    title: row.feedTitle || row.name || row.id,
+    description: row.feedDescription || '',
+    imageUrl: row.feedImageUrl,
+    author: row.feedAuthor || '',
+    language: row.feedLanguage || '',
+    category: normalizedCategories[0] || null,
+    normalizedCategories,
+    episodeCount: row.episodeCount ?? 0,
+    feedUrl: row.feedUrl,
+    latestPublishedAt: row.latestPublishedAt,
+    sourceUpdatedAt: row.updatedAt,
+  };
+};
+
+const categoryRows = await db
+  .select({ categoriesJson: rssSourceSnapshots.categoriesJson })
   .from(rssSources)
+  .leftJoin(rssSourceSnapshots, eq(rssSources.id, rssSourceSnapshots.sourceId))
   .where(eq(rssSources.isActive, true));
 
-const feedResults = await Promise.all(
-  sources.map(async (source) => {
-    try {
-      const feed = await fetchAndParseRss(source.feedUrl);
-      return { ...source, feed };
-    } catch {
-      return null;
-    }
-  })
-);
-
-const allFeeds = feedResults.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
-const categoryCountMap = allFeeds.reduce((map, entry) => {
-  const uniqueCategories = new Set(
-    entry.feed.categories
-      .map(normalizeCategory)
-      .filter((category): category is CanonicalCategory => category !== null)
+const categoryCountMap = categoryRows.reduce((map, row) => {
+  const normalizedCategories = Array.from(
+    new Set(
+      parseCategoriesJson(row.categoriesJson)
+        .map(normalizeCategory)
+        .filter((category): category is CanonicalCategory => category !== null)
+    )
   );
+  const uniqueCategories = new Set(normalizedCategories);
   for (const category of uniqueCategories) {
     map.set(category, (map.get(category) ?? 0) + 1);
   }
@@ -171,55 +107,71 @@ const categoryStats = CATEGORY_CANONICAL
   .map((name) => ({ name, count: categoryCountMap.get(name) ?? 0 }))
   .filter((category) => category.count > 0);
 
-const podcasts = allFeeds
-  .map((entry) => {
-    const normalizedCategories = Array.from(
-      new Set(
-        entry.feed.categories
-          .map(normalizeCategory)
-          .filter((category): category is CanonicalCategory => category !== null)
-      )
-    );
-    return {
-      ...entry,
-      normalizedCategories,
-    };
-  })
-  .filter((entry) => !selectedCategory || entry.normalizedCategories.includes(selectedCategory))
-  .map((entry) => ({
-    id: entry.id,
-    title: entry.feed.title || entry.name || entry.id,
-    description: entry.feed.description,
-    imageUrl: entry.feed.imageUrl,
-    author: entry.feed.author,
-    language: entry.feed.language,
-    category: entry.normalizedCategories[0] || null,
-    episodeCount: entry.feed.items.length,
-    feedUrl: entry.feedUrl,
-    latestPublishedAt: entry.feed.items.reduce<string | null>((latest, item) => {
-      if (!item.pubDate) return latest;
-      if (!latest) return item.pubDate;
-      return Date.parse(item.pubDate) > Date.parse(latest) ? item.pubDate : latest;
-    }, null),
-  }));
+const latestSortExpr = sql`COALESCE(${rssSourceSnapshots.latestPublishedAt}, ${rssSources.updatedAt})`;
+const titleSortExpr = sql`COALESCE(${rssSourceSnapshots.feedTitle}, ${rssSources.name}, ${rssSources.id})`;
 
-const sortedPodcasts = podcasts.slice().sort((a, b) => {
+let totalItems = 0;
+let safePage = 1;
+let paginatedPodcasts: ReturnType<typeof mapSourceRow>[] = [];
+
+if (!selectedCategory) {
+  const countRows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(rssSources)
+    .where(eq(rssSources.isActive, true));
+
+  totalItems = Number(countRows[0]?.count ?? 0);
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+
+  let query = db
+    .select(selectFields)
+    .from(rssSources)
+    .leftJoin(rssSourceSnapshots, eq(rssSources.id, rssSourceSnapshots.sourceId))
+    .where(eq(rssSources.isActive, true));
+
   if (selectedSort === 'title') {
-    return a.title.localeCompare(b.title, 'ja');
+    query = query.orderBy(asc(titleSortExpr));
+  } else if (selectedSort === 'episodes') {
+    query = query.orderBy(desc(rssSourceSnapshots.episodeCount), desc(latestSortExpr));
+  } else {
+    query = query.orderBy(desc(latestSortExpr));
   }
-  if (selectedSort === 'episodes') {
-    return b.episodeCount - a.episodeCount;
-  }
-  const aTime = a.latestPublishedAt ? Date.parse(a.latestPublishedAt) : 0;
-  const bTime = b.latestPublishedAt ? Date.parse(b.latestPublishedAt) : 0;
-  return bTime - aTime;
-});
 
-const totalItems = sortedPodcasts.length;
+  const pageRows = await query.limit(PAGE_SIZE).offset(startIndex);
+  paginatedPodcasts = pageRows.map(mapSourceRow);
+} else {
+  const sourceRows = await db
+    .select(selectFields)
+    .from(rssSources)
+    .leftJoin(rssSourceSnapshots, eq(rssSources.id, rssSourceSnapshots.sourceId))
+    .where(eq(rssSources.isActive, true));
+
+  const filtered = sourceRows
+    .map(mapSourceRow)
+    .filter((entry) => entry.normalizedCategories.includes(selectedCategory));
+
+  const sorted = filtered.slice().sort((a, b) => {
+    if (selectedSort === 'title') {
+      return a.title.localeCompare(b.title, 'ja');
+    }
+    if (selectedSort === 'episodes') {
+      return b.episodeCount - a.episodeCount;
+    }
+    const aTime = a.latestPublishedAt ? Date.parse(a.latestPublishedAt) : Date.parse(a.sourceUpdatedAt);
+    const bTime = b.latestPublishedAt ? Date.parse(b.latestPublishedAt) : Date.parse(b.sourceUpdatedAt);
+    return bTime - aTime;
+  });
+
+  totalItems = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  paginatedPodcasts = sorted.slice(startIndex, startIndex + PAGE_SIZE);
+}
+
 const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
-const safePage = Math.min(currentPage, totalPages);
-const startIndex = (safePage - 1) * PAGE_SIZE;
-const paginatedPodcasts = sortedPodcasts.slice(startIndex, startIndex + PAGE_SIZE);
 
 const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page?: number }) => {
   const params = new URLSearchParams();
