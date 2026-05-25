@@ -1,6 +1,8 @@
 ---
 import '../styles/global.css';
 import { LoginForm } from '../presentation/ui/features/auth';
+
+const error = Astro.url.searchParams.get('error');
 ---
 
 <!doctype html>
@@ -12,6 +14,6 @@ import { LoginForm } from '../presentation/ui/features/auth';
     <title>Login | PODDOCK</title>
   </head>
   <body>
-    <LoginForm client:load />
+    <LoginForm client:load initialErrorCode={error} />
   </body>
 </html>

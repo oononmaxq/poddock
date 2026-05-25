@@ -1,0 +1,222 @@
+---
+import '../../styles/global.css';
+import { ClientRouter, ViewTransitions } from 'astro:transitions';
+import { createDb } from '../../infrastructure/db/client';
+import { rssSources } from '../../infrastructure/db/schema';
+import { fetchAndParseRss } from '../../infrastructure/rss/feed-parser';
+import { and, eq } from 'drizzle-orm';
+import { FeedEpisodeList } from '../../presentation/ui/components/FeedEpisodeList';
+import { FixedAudioPlayer } from '../../presentation/ui/components/FixedAudioPlayer';
+import { ChannelSubscriptionButton } from '../../presentation/ui/components/ChannelSubscriptionButton';
+import { ExpandableText } from '../../presentation/ui/components/ExpandableText';
+import { ToastContainer } from '../../presentation/ui/components/Toast';
+
+const { sourceId } = Astro.params;
+const db = createDb(Astro.locals.runtime.env.DB);
+const cookieHeader = Astro.request.headers.get('cookie') || '';
+const isLoggedIn = cookieHeader.includes('access_token=');
+
+const source = await db
+  .select({
+    id: rssSources.id,
+    name: rssSources.name,
+    feedUrl: rssSources.feedUrl,
+  })
+  .from(rssSources)
+  .where(and(eq(rssSources.id, sourceId || ''), eq(rssSources.isActive, true)))
+  .get();
+
+if (!source) {
+  return Astro.redirect('/404');
+}
+
+let feedErrorMessage: string | null = null;
+let feed = null;
+try {
+  feed = await fetchAndParseRss(source.feedUrl);
+} catch (error) {
+  feedErrorMessage = error instanceof Error ? error.message : 'Failed to fetch RSS';
+}
+const safeFeed = feed ?? {
+  title: source.name || source.id,
+  description: '',
+  language: 'ja',
+  author: '',
+  imageUrl: null,
+  categories: [] as string[],
+  items: [] as Array<{
+    guid: string | null;
+    title: string;
+    description: string;
+    pubDate: string | null;
+    link: string | null;
+    enclosureUrl: string | null;
+  }>,
+};
+const feedTitle = safeFeed.title || source.name || source.id;
+const EPISODE_LIMIT = 12;
+const DESCRIPTION_LIMIT = 280;
+const sortParam = Astro.url.searchParams.get('sort');
+const allowedSorts = ['newest', 'oldest', 'title'] as const;
+type SortKey = (typeof allowedSorts)[number];
+const selectedSort: SortKey = allowedSorts.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'newest';
+const pageParam = Number.parseInt(Astro.url.searchParams.get('page') || '1', 10);
+const currentPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+
+const truncateText = (text: string, limit: number) => {
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit)}...`;
+};
+
+const sortedItems = safeFeed.items.slice().sort((a, b) => {
+  if (selectedSort === 'title') {
+    return a.title.localeCompare(b.title, 'ja');
+  }
+  const aTime = a.pubDate ? Date.parse(a.pubDate) : 0;
+  const bTime = b.pubDate ? Date.parse(b.pubDate) : 0;
+  return selectedSort === 'oldest' ? aTime - bTime : bTime - aTime;
+});
+
+const totalItems = sortedItems.length;
+const totalPages = Math.max(1, Math.ceil(totalItems / EPISODE_LIMIT));
+const safePage = Math.min(currentPage, totalPages);
+const startIndex = (safePage - 1) * EPISODE_LIMIT;
+const displayItems = sortedItems.slice(startIndex, startIndex + EPISODE_LIMIT);
+const buildEpisodeKey = (item: (typeof displayItems)[number]) =>
+  item.guid || item.link || item.enclosureUrl || `${item.title}::${item.pubDate ?? ''}`;
+const displayItemsForPlayer = displayItems.map((item, idx) => ({
+  id: `${safePage}-${idx}-${item.pubDate || 'no-date'}`,
+  episodeKey: buildEpisodeKey(item),
+  title: item.title,
+  description: item.description ? truncateText(item.description, DESCRIPTION_LIMIT) : '',
+  pubDate: item.pubDate,
+  link: item.link,
+  enclosureUrl: item.enclosureUrl,
+}));
+
+const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
+  const params = new URLSearchParams();
+  const sort = next.sort ?? selectedSort;
+  const page = next.page ?? safePage;
+  if (sort !== 'newest') params.set('sort', sort);
+  if (page > 1) params.set('page', String(page));
+  const query = params.toString();
+  return query ? `/feeds/${sourceId}?${query}` : `/feeds/${sourceId}`;
+};
+---
+
+<!doctype html>
+<html lang={safeFeed.language || 'ja'} data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{feedTitle} | PODDOCK</title>
+    <meta name="description" content={safeFeed.description || `${feedTitle} の番組情報`} />
+    <ViewTransitions />
+  </head>
+  <body class="min-h-screen bg-base-100 pb-28">
+    <header class="navbar bg-base-100 border-b border-base-200 px-4 sm:px-6 lg:px-12">
+      <div class="flex-1">
+        <a href="/" class="flex items-center">
+          <img src="/mojilogo_white.png" alt="PODDOCK" class="h-10 sm:h-12" />
+        </a>
+      </div>
+      <div class="flex-none">
+        <a href="/mypage" class="btn btn-ghost btn-sm">マイページ</a>
+        <a href="/podcasts" class="btn btn-ghost">番組一覧へ戻る</a>
+      </div>
+    </header>
+
+    <main class="px-4 sm:px-6 lg:px-12 py-10">
+      <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-6 mb-10">
+          {safeFeed.imageUrl && (
+            <img src={safeFeed.imageUrl} alt={feedTitle} class="w-40 h-40 rounded-xl object-cover shadow-md" />
+          )}
+          <div class="flex-1">
+            <h1 class="text-3xl font-bold mb-3">{feedTitle}</h1>
+            {safeFeed.description ? (
+              <ExpandableText client:load text={safeFeed.description} />
+            ) : (
+              <p class="text-base-content/70">説明はありません。</p>
+            )}
+            <div class="mt-4 flex flex-wrap gap-2">
+              {safeFeed.author && <span class="badge">{safeFeed.author}</span>}
+              {safeFeed.language && <span class="badge badge-ghost">{safeFeed.language}</span>}
+              {safeFeed.categories.map((category) => (
+                <span class="badge badge-outline">{category}</span>
+              ))}
+              <span class="badge badge-primary badge-outline">Episodes: {safeFeed.items.length}</span>
+            </div>
+            <div class="mt-4">
+              <a href={source.feedUrl} class="link link-primary break-all" target="_blank" rel="noopener noreferrer">{source.feedUrl}</a>
+            </div>
+            <div class="mt-4">
+              <ChannelSubscriptionButton client:load sourceId={source.id} initialLoggedIn={isLoggedIn} />
+            </div>
+          </div>
+        </div>
+
+        <section>
+          {feedErrorMessage && (
+            <div class="alert alert-warning mb-4">
+              <span>RSSの取得に失敗しました。時間をおいて再度アクセスしてください。</span>
+            </div>
+          )}
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold">エピソード</h2>
+            <span class="badge badge-outline">表示 {displayItems.length} / 全 {safeFeed.items.length}</span>
+          </div>
+          <div class="mb-4 flex flex-wrap items-center gap-2">
+            <span class="text-sm text-base-content/60">並び順:</span>
+            <a href={buildFeedUrl({ sort: 'newest', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'newest', 'btn-ghost': selectedSort !== 'newest' }]}>
+              新しい順
+            </a>
+            <a href={buildFeedUrl({ sort: 'oldest', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'oldest', 'btn-ghost': selectedSort !== 'oldest' }]}>
+              古い順
+            </a>
+            <a href={buildFeedUrl({ sort: 'title', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'title', 'btn-ghost': selectedSort !== 'title' }]}>
+              タイトル
+            </a>
+          </div>
+          {displayItems.length === 0 ? (
+            <div class="alert">エピソードがありません。</div>
+          ) : (
+            <FeedEpisodeList
+              client:load
+              sourceId={source.id}
+              podcastTitle={feedTitle}
+              podcastImageUrl={safeFeed.imageUrl}
+              items={displayItemsForPlayer}
+            />
+          )}
+
+          {totalPages > 1 && (
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+              <a href={buildFeedUrl({ page: Math.max(1, safePage - 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage <= 1 }]}>
+                前へ
+              </a>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <a
+                  href={buildFeedUrl({ page })}
+                  class:list={['btn btn-sm', { 'btn-primary': page === safePage, 'btn-ghost': page !== safePage }]}
+                >
+                  {page}
+                </a>
+              ))}
+              <a href={buildFeedUrl({ page: Math.min(totalPages, safePage + 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage >= totalPages }]}>
+                次へ
+              </a>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+    <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
+      <FixedAudioPlayer client:load />
+    </div>
+    <ToastContainer client:load />
+    <ClientRouter />
+  </body>
+</html>

@@ -135,6 +135,79 @@ export const monthlyPlayStats = sqliteTable('monthly_play_stats', {
   updatedAt: text('updated_at').notNull(),
 });
 
+// RSS Source - 収集対象RSS URL
+export const rssSources = sqliteTable('rss_sources', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  feedUrl: text('feed_url').notNull().unique(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// ListeningHistory - ユーザーごとの再生履歴
+export const listeningHistories = sqliteTable('listening_histories', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => adminUsers.id, { onDelete: 'cascade' }),
+  episodeId: text('episode_id').notNull(),
+  podcastId: text('podcast_id').notNull(),
+  title: text('title').notNull(),
+  podcastTitle: text('podcast_title').notNull(),
+  audioUrl: text('audio_url').notNull(),
+  coverImageUrl: text('cover_image_url'),
+  lastPositionSeconds: integer('last_position_seconds').notNull().default(0),
+  durationSeconds: integer('duration_seconds').notNull().default(0),
+  lastPlayedAt: text('last_played_at').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+// UserChannelSubscription - ユーザーの登録チャンネル（RSSソース）
+export const userChannelSubscriptions = sqliteTable('user_channel_subscriptions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => adminUsers.id, { onDelete: 'cascade' }),
+  sourceId: text('source_id')
+    .notNull()
+    .references(() => rssSources.id, { onDelete: 'cascade' }),
+  createdAt: text('created_at').notNull(),
+});
+
+// EpisodeComment - RSSエピソード単位のコメント
+export const episodeComments = sqliteTable('episode_comments', {
+  id: text('id').primaryKey(),
+  sourceId: text('source_id')
+    .notNull()
+    .references(() => rssSources.id, { onDelete: 'cascade' }),
+  episodeKey: text('episode_key').notNull(),
+  authorName: text('author_name').notNull(),
+  body: text('body').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+// EpisodeFavorite - ユーザーごとのRSSエピソードお気に入り
+export const episodeFavorites = sqliteTable('episode_favorites', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => adminUsers.id, { onDelete: 'cascade' }),
+  sourceId: text('source_id')
+    .notNull()
+    .references(() => rssSources.id, { onDelete: 'cascade' }),
+  episodeKey: text('episode_key').notNull(),
+  title: text('title').notNull(),
+  podcastTitle: text('podcast_title').notNull(),
+  coverImageUrl: text('cover_image_url'),
+  link: text('link'),
+  enclosureUrl: text('enclosure_url'),
+  pubDate: text('pub_date'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
 // Type exports for use in application layer
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type NewAdminUser = typeof adminUsers.$inferInsert;
@@ -165,3 +238,18 @@ export type NewMonthlyPlayStats = typeof monthlyPlayStats.$inferInsert;
 
 export type MagicLink = typeof magicLinks.$inferSelect;
 export type NewMagicLink = typeof magicLinks.$inferInsert;
+
+export type RssSource = typeof rssSources.$inferSelect;
+export type NewRssSource = typeof rssSources.$inferInsert;
+
+export type ListeningHistory = typeof listeningHistories.$inferSelect;
+export type NewListeningHistory = typeof listeningHistories.$inferInsert;
+
+export type UserChannelSubscription = typeof userChannelSubscriptions.$inferSelect;
+export type NewUserChannelSubscription = typeof userChannelSubscriptions.$inferInsert;
+
+export type EpisodeComment = typeof episodeComments.$inferSelect;
+export type NewEpisodeComment = typeof episodeComments.$inferInsert;
+
+export type EpisodeFavorite = typeof episodeFavorites.$inferSelect;
+export type NewEpisodeFavorite = typeof episodeFavorites.$inferInsert;

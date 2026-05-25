@@ -200,6 +200,8 @@ export const translations = {
       "パスワード不要。メールでログインリンクをお送りします。",
     "login.error.network": "ネットワークエラーが発生しました",
     "login.error.failed": "ログインに失敗しました",
+    "login.error.token_used": "このログインリンクはすでに使用されています。新しいリンクを再送してください。",
+    "login.error.invalid_token": "ログインリンクが無効か期限切れです。新しいリンクを再送してください。",
     "login.checkEmail.title": "メールを確認してください",
     "login.checkEmail.description":
       "ログインリンクを送信しました。メールを確認してリンクをクリックしてください。",
@@ -429,6 +431,8 @@ export const translations = {
     "login.magicLinkHint": "No password needed. We'll send you a login link.",
     "login.error.network": "Network error occurred",
     "login.error.failed": "Login failed",
+    "login.error.token_used": "This login link has already been used. Please request a new one.",
+    "login.error.invalid_token": "This login link is invalid or expired. Please request a new one.",
     "login.checkEmail.title": "Check your email",
     "login.checkEmail.description":
       "We sent you a login link. Check your email and click the link to log in.",

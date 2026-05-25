@@ -1,4 +1,6 @@
+import { useEffect } from 'preact/hooks';
 import {
+  type Episode,
   currentEpisode,
   isPlaying,
   currentTime,
@@ -8,6 +10,8 @@ import {
   progress,
   formattedCurrentTime,
   formattedDuration,
+  playEpisode,
+  getAudioElement,
   togglePlay,
   skipForward,
   skipBackward,
@@ -19,20 +23,34 @@ import {
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 export function FixedAudioPlayer() {
+  useEffect(() => {
+    // Ensure persisted snapshot is restored when this component mounts
+    getAudioElement();
+
+    const onPlayEpisode = (event: Event) => {
+      const customEvent = event as CustomEvent<Episode>;
+      if (!customEvent.detail?.audioUrl) return;
+      playEpisode(customEvent.detail);
+    };
+
+    window.addEventListener('poddock:play-episode', onPlayEpisode as EventListener);
+    return () => {
+      window.removeEventListener('poddock:play-episode', onPlayEpisode as EventListener);
+    };
+  }, []);
+
   const episode = currentEpisode.value;
 
   if (!episode) return null;
 
-  const handleSeek = (e: MouseEvent) => {
-    const bar = e.currentTarget as HTMLElement;
-    const rect = bar.getBoundingClientRect();
-    const percent = ((e.clientX - rect.left) / rect.width) * 100;
-    seekByPercent(percent);
-  };
-
   const handleVolumeChange = (e: Event) => {
     const input = e.target as HTMLInputElement;
     setVolume(parseFloat(input.value));
+  };
+
+  const handleSeekSliderChange = (e: Event) => {
+    const input = e.target as HTMLInputElement;
+    seekByPercent(parseFloat(input.value));
   };
 
   const cyclePlaybackRate = () => {
@@ -43,17 +61,6 @@ export function FixedAudioPlayer() {
 
   return (
     <div class="fixed bottom-0 left-0 right-0 bg-base-200 border-t border-base-300 shadow-lg z-50">
-      {/* Progress bar (clickable) */}
-      <div
-        class="h-1 bg-base-300 cursor-pointer group"
-        onClick={handleSeek}
-      >
-        <div
-          class="h-full bg-primary transition-all"
-          style={{ width: `${progress.value}%` }}
-        />
-      </div>
-
       <div class="container mx-auto px-4 py-3">
         <div class="flex items-center gap-4">
           {/* Cover image */}
@@ -174,7 +181,7 @@ export function FixedAudioPlayer() {
           </div>
 
           {/* Time */}
-          <div class="text-xs text-base-content/70 tabular-nums hidden md:block">
+          <div class="text-xs text-base-content/70 tabular-nums">
             {formattedCurrentTime.value} / {formattedDuration.value}
           </div>
 
@@ -238,6 +245,25 @@ export function FixedAudioPlayer() {
           >
             {playbackRate.value}x
           </button>
+        </div>
+
+        <div class="mt-2 flex items-center gap-3">
+          <span class="text-[11px] text-base-content/70 tabular-nums w-10 text-right">
+            {formattedCurrentTime.value}
+          </span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="0.1"
+            value={progress.value}
+            onInput={handleSeekSliderChange}
+            class="range range-sm range-primary flex-1"
+            aria-label="再生位置"
+          />
+          <span class="text-[11px] text-base-content/70 tabular-nums w-10">
+            {formattedDuration.value}
+          </span>
         </div>
       </div>
     </div>

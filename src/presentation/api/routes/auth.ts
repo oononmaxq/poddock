@@ -22,6 +22,10 @@ const verifyTokenSchema = z.object({
 
 export const authRoutes = new Hono<AppEnv>();
 
+function prefersJson(acceptHeader: string): boolean {
+  return acceptHeader.includes('application/json');
+}
+
 // Request magic link - sends email with login link
 authRoutes.post('/magic-link', async (c) => {
   const body = await c.req.json();
@@ -91,9 +95,14 @@ authRoutes.post('/magic-link', async (c) => {
 // Verify magic link token and issue JWT
 authRoutes.get('/verify', async (c) => {
   const token = c.req.query('token');
+  const acceptHeader = c.req.header('Accept') || '';
+  const wantsJson = prefersJson(acceptHeader);
 
   if (!token) {
-    throw new AppError(400, 'missing_token', 'Token is required');
+    if (wantsJson) {
+      throw new AppError(400, 'missing_token', 'Token is required');
+    }
+    return c.redirect('/login?error=missing_token');
   }
 
   const db = createDb(c.env.DB);
@@ -114,11 +123,17 @@ authRoutes.get('/verify', async (c) => {
   }
 
   if (!magicLink) {
-    throw new AppError(400, 'invalid_token', 'Invalid or expired token');
+    if (wantsJson) {
+      throw new AppError(400, 'invalid_token', 'Invalid or expired token');
+    }
+    return c.redirect('/login?error=invalid_token');
   }
 
   if (magicLink.usedAt) {
-    throw new AppError(400, 'token_used', 'This link has already been used');
+    if (wantsJson) {
+      throw new AppError(400, 'token_used', 'This link has already been used');
+    }
+    return c.redirect('/login?error=token_used');
   }
 
   // Mark token as used
@@ -183,8 +198,7 @@ authRoutes.get('/verify', async (c) => {
   c.header('Set-Cookie', cookieOptions.join('; '));
 
   // Redirect to dashboard with token (or return JSON for API use)
-  const acceptHeader = c.req.header('Accept') || '';
-  if (acceptHeader.includes('application/json')) {
+  if (wantsJson) {
     return c.json({
       message: 'Login successful',
       expires_in: 86400,
