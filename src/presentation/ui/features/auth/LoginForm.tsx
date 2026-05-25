@@ -7,9 +7,20 @@ import {
 
 type Lang = keyof typeof translations;
 
-export function LoginForm() {
+interface LoginFormProps {
+  initialErrorCode?: string | null;
+}
+
+export function LoginForm({ initialErrorCode = null }: LoginFormProps) {
+  const getInitialError = (code: string | null) => {
+    if (!code) return null;
+    if (code === "token_used") return "login.error.token_used";
+    if (code === "invalid_token" || code === "missing_token") return "login.error.invalid_token";
+    return null;
+  };
+
   const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(getInitialError(initialErrorCode));
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [lang, setLang] = useState<Lang>(defaultLang);
@@ -147,7 +158,7 @@ export function LoginForm() {
                     d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span>{error}</span>
+                <span>{error?.startsWith("login.") ? t(error as keyof typeof translations.ja) : error}</span>
               </div>
             )}
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
+import { currentEpisode } from '../stores/audio-store';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -38,6 +39,7 @@ function checkPendingToast() {
 // トーストコンテナコンポーネント（Layoutに1つだけ配置）
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastData[]>([]);
+  const hasPlayer = Boolean(currentEpisode.value);
 
   // 初回マウント時とView Transitions後にチェック
   useEffect(() => {
@@ -107,7 +109,10 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="toast toast-end toast-bottom z-50">
+    <div
+      className="fixed right-4 z-[70] flex max-w-sm flex-col gap-2"
+      style={{ bottom: hasPlayer ? '7rem' : '1rem' }}
+    >
       {toasts.map((toast) => (
         <div key={toast.id} className={`alert ${alertClass(toast.type)} shadow-lg`}>
           <Icon type={toast.type} />

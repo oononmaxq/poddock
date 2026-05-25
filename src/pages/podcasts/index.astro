@@ -1,8 +1,356 @@
 ---
-import Layout from '../../presentation/ui/layouts/Layout.astro';
-import { PodcastList } from '../../presentation/ui/features/dashboard';
+import '../../styles/global.css';
+import { ClientRouter, ViewTransitions } from 'astro:transitions';
+import { createDb } from '../../infrastructure/db/client';
+import { rssSources } from '../../infrastructure/db/schema';
+import { fetchAndParseRss } from '../../infrastructure/rss/feed-parser';
+import { eq } from 'drizzle-orm';
+import { FixedAudioPlayer } from '../../presentation/ui/components/FixedAudioPlayer';
+
+const db = createDb(Astro.locals.runtime.env.DB);
+const CATEGORY_CANONICAL = [
+  'ビジネス',
+  'キャリア',
+  'テクノロジー',
+  '言語',
+  '暮らし',
+  '教育',
+  'ニュース',
+  '健康',
+  '科学',
+  '社会・文化',
+  'エンタメ',
+  '音楽',
+  'スポーツ',
+  'コメディ',
+] as const;
+type CanonicalCategory = (typeof CATEGORY_CANONICAL)[number];
+const CATEGORY_ALIAS_MAP: Record<string, CanonicalCategory> = {
+  business: 'ビジネス',
+  entrepreneurship: 'ビジネス',
+  marketing: 'ビジネス',
+  economy: 'ビジネス',
+  'investing': 'ビジネス',
+  'management': 'ビジネス',
+  ビジネス: 'ビジネス',
+  キャリア: 'キャリア',
+  career: 'キャリア',
+  careers: 'キャリア',
+  jobs: 'キャリア',
+  technology: 'テクノロジー',
+  'tech news': 'テクノロジー',
+  'software how-to': 'テクノロジー',
+  gadgets: 'テクノロジー',
+  tech: 'テクノロジー',
+  テクノロジー: 'テクノロジー',
+  language: '言語',
+  languages: '言語',
+  'language learning': '言語',
+  言語: '言語',
+  語学: '言語',
+  leisure: '暮らし',
+  'home & garden': '暮らし',
+  hobbies: '暮らし',
+  crafts: '暮らし',
+  games: '暮らし',
+  parenting: '暮らし',
+  'kids & family': '暮らし',
+  'kids and family': '暮らし',
+  'places & travel': '暮らし',
+  travel: '暮らし',
+  lifestyle: '暮らし',
+  暮らし: '暮らし',
+  生活: '暮らし',
+  education: '教育',
+  'how to': '教育',
+  courses: '教育',
+  'self-improvement': '教育',
+  教育: '教育',
+  学習: '教育',
+  news: 'ニュース',
+  'daily news': 'ニュース',
+  politics: 'ニュース',
+  'news commentary': 'ニュース',
+  ニュース: 'ニュース',
+  health: '健康',
+  'health & fitness': '健康',
+  'mental health': '健康',
+  fitness: '健康',
+  medicine: '健康',
+  wellness: '健康',
+  健康: '健康',
+  science: '科学',
+  astronomy: '科学',
+  nature: '科学',
+  科学: '科学',
+  'society & culture': '社会・文化',
+  'society and culture': '社会・文化',
+  documentary: '社会・文化',
+  philosophy: '社会・文化',
+  relationships: '社会・文化',
+  社会: '社会・文化',
+  文化: '社会・文化',
+  '社会・文化': '社会・文化',
+  entertainment: 'エンタメ',
+  'tv & film': 'エンタメ',
+  'tv and film': 'エンタメ',
+  fiction: 'エンタメ',
+  'true crime': 'エンタメ',
+  anime: 'エンタメ',
+  manga: 'エンタメ',
+  エンタメ: 'エンタメ',
+  娯楽: 'エンタメ',
+  music: '音楽',
+  音楽: '音楽',
+  sports: 'スポーツ',
+  'sports news': 'スポーツ',
+  football: 'スポーツ',
+  baseball: 'スポーツ',
+  basketball: 'スポーツ',
+  golf: 'スポーツ',
+  スポーツ: 'スポーツ',
+  comedy: 'コメディ',
+  'comedy interviews': 'コメディ',
+  improv: 'コメディ',
+  'stand-up': 'コメディ',
+  コメディ: 'コメディ',
+};
+const normalizeCategory = (raw: string): CanonicalCategory | null => {
+  const trimmed = raw.trim();
+  if (!trimmed || /^\d+$/.test(trimmed)) return null;
+  const key = trimmed.toLowerCase();
+  return CATEGORY_ALIAS_MAP[key] ?? null;
+};
+const selectedCategoryParam = Astro.url.searchParams.get('category')?.trim() || null;
+const selectedCategory = selectedCategoryParam && CATEGORY_CANONICAL.includes(selectedCategoryParam as CanonicalCategory)
+  ? (selectedCategoryParam as CanonicalCategory)
+  : null;
+const sortParam = Astro.url.searchParams.get('sort');
+const allowedSorts = ['latest', 'episodes', 'title'] as const;
+type SortKey = (typeof allowedSorts)[number];
+const selectedSort: SortKey = allowedSorts.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'latest';
+const pageParam = Number.parseInt(Astro.url.searchParams.get('page') || '1', 10);
+const currentPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+const userAgent = Astro.request.headers.get('user-agent')?.toLowerCase() || '';
+const isMobileDevice = /iphone|ipod|android.+mobile|windows phone/.test(userAgent);
+const PAGE_SIZE = isMobileDevice ? 12 : 15;
+
+const sources = await db
+  .select({
+    id: rssSources.id,
+    name: rssSources.name,
+    feedUrl: rssSources.feedUrl,
+  })
+  .from(rssSources)
+  .where(eq(rssSources.isActive, true));
+
+const feedResults = await Promise.all(
+  sources.map(async (source) => {
+    try {
+      const feed = await fetchAndParseRss(source.feedUrl);
+      return { ...source, feed };
+    } catch {
+      return null;
+    }
+  })
+);
+
+const allFeeds = feedResults.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+const categoryCountMap = allFeeds.reduce((map, entry) => {
+  const uniqueCategories = new Set(
+    entry.feed.categories
+      .map(normalizeCategory)
+      .filter((category): category is CanonicalCategory => category !== null)
+  );
+  for (const category of uniqueCategories) {
+    map.set(category, (map.get(category) ?? 0) + 1);
+  }
+  return map;
+}, new Map<CanonicalCategory, number>());
+const categoryStats = CATEGORY_CANONICAL
+  .map((name) => ({ name, count: categoryCountMap.get(name) ?? 0 }))
+  .filter((category) => category.count > 0);
+
+const podcasts = allFeeds
+  .map((entry) => {
+    const normalizedCategories = Array.from(
+      new Set(
+        entry.feed.categories
+          .map(normalizeCategory)
+          .filter((category): category is CanonicalCategory => category !== null)
+      )
+    );
+    return {
+      ...entry,
+      normalizedCategories,
+    };
+  })
+  .filter((entry) => !selectedCategory || entry.normalizedCategories.includes(selectedCategory))
+  .map((entry) => ({
+    id: entry.id,
+    title: entry.feed.title || entry.name || entry.id,
+    description: entry.feed.description,
+    imageUrl: entry.feed.imageUrl,
+    author: entry.feed.author,
+    language: entry.feed.language,
+    category: entry.normalizedCategories[0] || null,
+    episodeCount: entry.feed.items.length,
+    feedUrl: entry.feedUrl,
+    latestPublishedAt: entry.feed.items.reduce<string | null>((latest, item) => {
+      if (!item.pubDate) return latest;
+      if (!latest) return item.pubDate;
+      return Date.parse(item.pubDate) > Date.parse(latest) ? item.pubDate : latest;
+    }, null),
+  }));
+
+const sortedPodcasts = podcasts.slice().sort((a, b) => {
+  if (selectedSort === 'title') {
+    return a.title.localeCompare(b.title, 'ja');
+  }
+  if (selectedSort === 'episodes') {
+    return b.episodeCount - a.episodeCount;
+  }
+  const aTime = a.latestPublishedAt ? Date.parse(a.latestPublishedAt) : 0;
+  const bTime = b.latestPublishedAt ? Date.parse(b.latestPublishedAt) : 0;
+  return bTime - aTime;
+});
+
+const totalItems = sortedPodcasts.length;
+const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+const safePage = Math.min(currentPage, totalPages);
+const startIndex = (safePage - 1) * PAGE_SIZE;
+const paginatedPodcasts = sortedPodcasts.slice(startIndex, startIndex + PAGE_SIZE);
+
+const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page?: number }) => {
+  const params = new URLSearchParams();
+  const category = next.category === undefined ? selectedCategory : next.category;
+  const sort = next.sort ?? selectedSort;
+  const page = next.page ?? safePage;
+  if (category) params.set('category', category);
+  if (sort !== 'latest') params.set('sort', sort);
+  if (page > 1) params.set('page', String(page));
+  const query = params.toString();
+  return query ? `/podcasts?${query}` : '/podcasts';
+};
 ---
 
-<Layout title="番組一覧">
-  <PodcastList client:load />
-</Layout>
+<!doctype html>
+<html lang="ja" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>番組一覧 | PODDOCK</title>
+    <meta name="description" content="RSSから収集した公開中のPodcast番組一覧。カテゴリ別に番組を探せます。" />
+    <ViewTransitions />
+  </head>
+  <body class="min-h-screen bg-base-100">
+    <header class="navbar bg-base-100 border-b border-base-200 px-4 sm:px-6 lg:px-12">
+      <div class="flex-1">
+        <a href="/" class="flex items-center">
+          <img src="/mojilogo_white.png" alt="PODDOCK" class="h-10 sm:h-12" />
+        </a>
+      </div>
+      <div class="flex-none">
+        <a href="/mypage" class="btn btn-ghost btn-sm">マイページ</a>
+      </div>
+    </header>
+
+    <main class="px-4 sm:px-6 lg:px-12 py-10">
+      <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-2">番組一覧</h1>
+        <p class="text-base-content/70 mb-8">RSS情報を収集して表示しています。</p>
+
+        {categoryStats.length > 0 && (
+          <div class="mb-8">
+            <p class="text-sm text-base-content/60 mb-3">カテゴリで絞り込み</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <a href={buildPodcastsUrl({ category: null, page: 1 })} class:list={['btn btn-sm', { 'btn-primary': !selectedCategory, 'btn-ghost': selectedCategory }]}>
+                すべて
+              </a>
+              {categoryStats.map((category) => (
+                <a
+                  href={buildPodcastsUrl({ category: category.name, page: 1 })}
+                  class:list={['btn btn-sm gap-1', { 'btn-primary': selectedCategory === category.name, 'btn-ghost': selectedCategory !== category.name }]}
+                >
+                  {category.name}
+                  <span class:list={['badge badge-xs', { 'badge-neutral': selectedCategory === category.name, 'badge-outline': selectedCategory !== category.name }]}>
+                    {category.count}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div class="mb-6 flex flex-wrap items-center gap-2">
+          <span class="text-sm text-base-content/60">並び順:</span>
+          <a href={buildPodcastsUrl({ sort: 'latest', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'latest', 'btn-ghost': selectedSort !== 'latest' }]}>
+            最新更新
+          </a>
+          <a href={buildPodcastsUrl({ sort: 'episodes', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'episodes', 'btn-ghost': selectedSort !== 'episodes' }]}>
+            エピソード数
+          </a>
+          <a href={buildPodcastsUrl({ sort: 'title', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'title', 'btn-ghost': selectedSort !== 'title' }]}>
+            タイトル
+          </a>
+        </div>
+
+        {paginatedPodcasts.length === 0 ? (
+          <div class="alert">
+            {selectedCategory ? `「${selectedCategory}」の番組はまだありません。` : '表示できる番組はまだありません。'}
+          </div>
+        ) : (
+          <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {paginatedPodcasts.map((podcast) => (
+              <a href={`/feeds/${podcast.id}`} class="group block">
+                <div class="overflow-hidden rounded-xl border border-base-300 bg-base-200">
+                  {podcast.imageUrl ? (
+                    <img
+                      src={podcast.imageUrl}
+                      alt={podcast.title}
+                      class="aspect-square w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div class="aspect-square w-full bg-base-300 flex items-center justify-center">
+                      <span class="text-sm text-base-content/50">No Image</span>
+                    </div>
+                  )}
+                </div>
+                <div class="mt-2 px-1">
+                  <h2 class="text-sm sm:text-base font-semibold leading-tight line-clamp-2">{podcast.title}</h2>
+                  <div class="mt-1 flex items-center gap-2 text-xs text-base-content/70">
+                    {podcast.category && <span class="badge badge-outline badge-sm">{podcast.category}</span>}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+            <a href={buildPodcastsUrl({ page: Math.max(1, safePage - 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage <= 1 }]}>
+              前へ
+            </a>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <a
+                href={buildPodcastsUrl({ page })}
+                class:list={['btn btn-sm', { 'btn-primary': page === safePage, 'btn-ghost': page !== safePage }]}
+              >
+                {page}
+              </a>
+            ))}
+            <a href={buildPodcastsUrl({ page: Math.min(totalPages, safePage + 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage >= totalPages }]}>
+              次へ
+            </a>
+          </div>
+        )}
+      </div>
+    </main>
+    <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
+      <FixedAudioPlayer client:load />
+    </div>
+    <ClientRouter />
+  </body>
+</html>

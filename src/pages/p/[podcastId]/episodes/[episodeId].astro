@@ -1,5 +1,6 @@
 ---
 import '../../../../styles/global.css';
+import { ClientRouter, ViewTransitions } from 'astro:transitions';
 import { createDb } from '../../../../infrastructure/db/client';
 import { podcasts, episodes, assets } from '../../../../infrastructure/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -193,6 +194,9 @@ const episodeForPlayer = {
     </footer>
 
     <!-- Fixed Audio Player -->
-    <FixedAudioPlayer client:load />
+    <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
+      <FixedAudioPlayer client:load />
+    </div>
+    <ClientRouter />
   </body>
 </html>

@@ -1,0 +1,61 @@
+---
+import '../styles/global.css';
+import { ClientRouter, ViewTransitions } from 'astro:transitions';
+import { MyPageDashboard } from '../presentation/ui/components/MyPageDashboard';
+import { FixedAudioPlayer } from '../presentation/ui/components/FixedAudioPlayer';
+
+const cookieHeader = Astro.request.headers.get('cookie') || '';
+const isLoggedIn = cookieHeader.includes('access_token=');
+if (!isLoggedIn) {
+  return Astro.redirect('/login');
+}
+---
+
+<!doctype html>
+<html lang="ja" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>マイページ | PODDOCK</title>
+    <meta name="description" content="再生履歴と登録チャンネルの最新エピソードを確認できるマイページです。" />
+    <ViewTransitions />
+  </head>
+  <body class="min-h-screen bg-base-100 pb-28">
+    <header class="navbar bg-base-100 border-b border-base-200 px-4 sm:px-6 lg:px-12">
+      <div class="flex-1">
+        <a href="/" class="flex items-center">
+          <img src="/mojilogo_white.png" alt="PODDOCK" class="h-10 sm:h-12" />
+        </a>
+      </div>
+      <div class="flex-none gap-2">
+        <a href="/podcasts" class="btn btn-ghost btn-sm">番組一覧</a>
+        <button type="button" id="logout-btn" class="btn btn-outline btn-sm">ログアウト</button>
+      </div>
+    </header>
+
+    <main class="px-4 sm:px-6 lg:px-12 py-10">
+      <div class="max-w-5xl mx-auto">
+        <h1 class="text-3xl font-bold mb-2">マイページ</h1>
+        <p class="text-base-content/70 mb-8">再生履歴と登録チャンネルの最新エピソードを確認できます。</p>
+        <MyPageDashboard client:load />
+      </div>
+    </main>
+
+    <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
+      <FixedAudioPlayer client:load />
+    </div>
+    <ClientRouter />
+
+    <script>
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        } catch {
+          // ignore
+        }
+        window.location.href = '/login';
+      });
+    </script>
+  </body>
+</html>

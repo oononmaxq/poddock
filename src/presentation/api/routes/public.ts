@@ -1,10 +1,22 @@
 import { Hono } from 'hono';
 import { eq, and, desc } from 'drizzle-orm';
+import { z } from 'zod';
 import { createDb } from '../../../infrastructure/db/client';
-import { podcasts, episodes, assets } from '../../../infrastructure/db/schema';
+import { podcasts, episodes, assets, episodeComments, rssSources } from '../../../infrastructure/db/schema';
+import { generateId } from '@infrastructure/utils/id';
+import { nowISO } from '@infrastructure/utils/date';
 import type { AppEnv } from '../types';
 
 const publicRoutes = new Hono<AppEnv>();
+const commentsQuerySchema = z.object({
+  episode_key: z.string().min(1),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+});
+const createCommentSchema = z.object({
+  episode_key: z.string().min(1).max(500),
+  author_name: z.string().trim().min(1).max(50),
+  body: z.string().trim().min(1).max(1000),
+});
 
 // Get public podcast by ID
 publicRoutes.get('/podcasts/:podcastId', async (c) => {
@@ -156,6 +168,72 @@ publicRoutes.get('/podcasts/:podcastId/episodes/:episodeId', async (c) => {
     ...episode,
     audio,
   });
+});
+
+publicRoutes.get('/feeds/:sourceId/comments', async (c) => {
+  const { sourceId } = c.req.param();
+  const { episode_key: episodeKey, limit } = commentsQuerySchema.parse(c.req.query());
+  const db = createDb(c.env.DB);
+
+  const source = await db
+    .select({ id: rssSources.id })
+    .from(rssSources)
+    .where(and(eq(rssSources.id, sourceId), eq(rssSources.isActive, true)))
+    .get();
+  if (!source) {
+    return c.json({ error: 'NOT_FOUND', message: 'Source not found' }, 404);
+  }
+
+  const items = await db
+    .select({
+      id: episodeComments.id,
+      authorName: episodeComments.authorName,
+      body: episodeComments.body,
+      createdAt: episodeComments.createdAt,
+    })
+    .from(episodeComments)
+    .where(and(eq(episodeComments.sourceId, sourceId), eq(episodeComments.episodeKey, episodeKey)))
+    .orderBy(desc(episodeComments.createdAt))
+    .limit(limit);
+
+  return c.json({ items });
+});
+
+publicRoutes.post('/feeds/:sourceId/comments', async (c) => {
+  const { sourceId } = c.req.param();
+  const db = createDb(c.env.DB);
+  const body = await c.req.json();
+  const data = createCommentSchema.parse(body);
+
+  const source = await db
+    .select({ id: rssSources.id })
+    .from(rssSources)
+    .where(and(eq(rssSources.id, sourceId), eq(rssSources.isActive, true)))
+    .get();
+  if (!source) {
+    return c.json({ error: 'NOT_FOUND', message: 'Source not found' }, 404);
+  }
+
+  const now = nowISO();
+  const commentId = generateId();
+  await db.insert(episodeComments).values({
+    id: commentId,
+    sourceId,
+    episodeKey: data.episode_key,
+    authorName: data.author_name,
+    body: data.body,
+    createdAt: now,
+  });
+
+  return c.json(
+    {
+      id: commentId,
+      authorName: data.author_name,
+      body: data.body,
+      createdAt: now,
+    },
+    201
+  );
 });
 
 export { publicRoutes };
