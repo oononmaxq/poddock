@@ -172,7 +172,7 @@ if (!selectedCategory) {
 const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
 const baseUrl = Astro.locals.runtime.env.BASE_URL || Astro.url.origin;
 const canonicalUrl = new URL(Astro.url.pathname, baseUrl).toString();
-const ogImageUrl = new URL('/mojilogo_white.png', baseUrl).toString();
+const ogImageUrl = new URL('/logo.png', baseUrl).toString();
 const shouldNoindex = safePage > 1 || selectedCategory !== null || selectedSort !== 'latest';
 const robotsContent = shouldNoindex ? 'noindex,follow' : 'index,follow';
 const websiteJsonLd = {
