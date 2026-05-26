@@ -129,6 +129,14 @@ export function PlayerScreen() {
               </svg>
             </button>
           </div>
+          <div class="mt-6 grid grid-cols-2 gap-3">
+            <button type="button" class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white">
+              前のエピソード
+            </button>
+            <button type="button" class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white">
+              次のエピソード
+            </button>
+          </div>
         </div>
       </div>
       <style>{`
