@@ -23,7 +23,7 @@ export function PlanGate() {
         <h2 className="card-title">{t('analytics.upgradeRequired')}</h2>
         <p className="text-base-content/70">{t('analytics.upgradeDescription')}</p>
         <div className="card-actions mt-4">
-          <a href="/settings" className="btn btn-primary">
+          <a href="/podcasts" className="btn btn-primary">
             {t('analytics.upgradePlan')}
           </a>
         </div>

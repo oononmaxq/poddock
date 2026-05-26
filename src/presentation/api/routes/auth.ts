@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
+import { getCookie } from 'hono/cookie';
 import { z } from 'zod';
 import { eq, and, gt } from 'drizzle-orm';
 import type { AppEnv } from '../types';
 import { AppError } from '../middleware/error-handler';
+import { magicLinkRateLimiter, authRateLimiter } from '../middleware/rate-limit';
 import { createDb } from '@infrastructure/db/client';
 import { adminUsers, magicLinks } from '@infrastructure/db/schema';
-import { createToken } from '@infrastructure/auth/jwt';
+import { createToken, verifyToken } from '@infrastructure/auth/jwt';
 import { generateId } from '@infrastructure/utils/id';
 import { nowISO } from '@infrastructure/utils/date';
 import { sendEmail, createMagicLinkEmail } from '@infrastructure/email/resend';
@@ -26,8 +28,56 @@ function prefersJson(acceptHeader: string): boolean {
   return acceptHeader.includes('application/json');
 }
 
+function shouldUseSecureCookie(baseUrl: string): boolean {
+  return !baseUrl.includes('localhost') && !baseUrl.includes('127.0.0.1');
+}
+
+function buildAccessTokenCookie(token: string, baseUrl: string): string {
+  const parts = [
+    `access_token=${token}`,
+    'HttpOnly',
+    'SameSite=Strict',
+    'Path=/',
+    'Max-Age=86400',
+  ];
+  if (shouldUseSecureCookie(baseUrl)) {
+    parts.push('Secure');
+  }
+  return parts.join('; ');
+}
+
+function buildClearAccessTokenCookie(baseUrl: string): string {
+  const parts = [
+    'access_token=',
+    'HttpOnly',
+    'SameSite=Strict',
+    'Path=/',
+    'Max-Age=0',
+  ];
+  if (shouldUseSecureCookie(baseUrl)) {
+    parts.push('Secure');
+  }
+  return parts.join('; ');
+}
+
+authRoutes.get('/status', async (c) => {
+  c.header('Cache-Control', 'no-store');
+  const token = getCookie(c, 'access_token');
+  if (!token) {
+    return c.json({ authenticated: false });
+  }
+
+  try {
+    await verifyToken(token, c.env.JWT_SECRET);
+    return c.json({ authenticated: true });
+  } catch {
+    return c.json({ authenticated: false });
+  }
+});
+
 // Request magic link - sends email with login link
-authRoutes.post('/magic-link', async (c) => {
+// Rate limited to 3 requests per 15 minutes
+authRoutes.post('/magic-link', magicLinkRateLimiter, async (c) => {
   const body = await c.req.json();
   const { email } = requestMagicLinkSchema.parse(body);
 
@@ -93,7 +143,8 @@ authRoutes.post('/magic-link', async (c) => {
 });
 
 // Verify magic link token and issue JWT
-authRoutes.get('/verify', async (c) => {
+// Rate limited to 5 requests per 15 minutes
+authRoutes.get('/verify', authRateLimiter, async (c) => {
   const token = c.req.query('token');
   const acceptHeader = c.req.header('Accept') || '';
   const wantsJson = prefersJson(acceptHeader);
@@ -136,13 +187,29 @@ authRoutes.get('/verify', async (c) => {
     return c.redirect('/login?error=token_used');
   }
 
-  // Mark token as used
+  // Mark token as used with atomic update to prevent race condition
+  // Only update if usedAt is still null (optimistic locking)
   try {
-    await db.update(magicLinks)
+    const result = await db.update(magicLinks)
       .set({ usedAt: now })
-      .where(eq(magicLinks.id, magicLink.id));
+      .where(and(
+        eq(magicLinks.id, magicLink.id),
+        eq(magicLinks.usedAt, null as unknown as string) // Only update if not already used
+      ));
+
+    // Check if update actually modified a row
+    // D1 returns rowsAffected in the result
+    if (!result.rowsAffected || result.rowsAffected === 0) {
+      // Another request already used this token
+      if (wantsJson) {
+        throw new AppError(400, 'token_used', 'This link has already been used');
+      }
+      return c.redirect('/login?error=token_used');
+    }
   } catch (err) {
+    if (err instanceof AppError) throw err;
     console.error('Failed to update magic_links:', err);
+    throw new AppError(500, 'db_error', 'Failed to verify token');
   }
 
   // Find or create user
@@ -184,18 +251,8 @@ authRoutes.get('/verify', async (c) => {
   const accessToken = await createToken(user.id, user.email, c.env.JWT_SECRET);
 
   // Set HttpOnly cookie
-  const isProduction = !c.env.BASE_URL.includes('localhost');
-  const cookieOptions = [
-    `access_token=${accessToken}`,
-    'HttpOnly',
-    'SameSite=Strict',
-    'Path=/',
-    'Max-Age=86400',
-  ];
-  if (isProduction) {
-    cookieOptions.push('Secure');
-  }
-  c.header('Set-Cookie', cookieOptions.join('; '));
+  c.header('Set-Cookie', buildAccessTokenCookie(accessToken, c.env.BASE_URL));
+  c.header('Cache-Control', 'no-store');
 
   // Redirect to dashboard with token (or return JSON for API use)
   if (wantsJson) {
@@ -216,12 +273,14 @@ authRoutes.post('/login', async (c) => {
 
 authRoutes.post('/logout', async (c) => {
   // Clear the HttpOnly cookie by setting it to expire immediately
-  c.header('Set-Cookie', 'access_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
+  c.header('Set-Cookie', buildClearAccessTokenCookie(c.env.BASE_URL));
+  c.header('Cache-Control', 'no-store');
   return c.json({ message: 'Logged out' });
 });
 
 authRoutes.get('/logout', async (c) => {
-  // Clear the HttpOnly cookie and redirect to login
-  c.header('Set-Cookie', 'access_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');
-  return c.redirect('/login');
+  return c.json(
+    { error: 'METHOD_NOT_ALLOWED', message: 'Use POST /api/auth/logout' },
+    405
+  );
 });

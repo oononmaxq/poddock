@@ -11,11 +11,17 @@ import { nowISO } from "@infrastructure/utils/date";
 const ALLOWED_AUDIO_TYPES = ["audio/mpeg", "audio/mp4", "audio/wav"];
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+// File size limits (in bytes)
+const MAX_AUDIO_SIZE = 500 * 1024 * 1024; // 500MB for audio
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;  // 10MB for images
+
 const uploadUrlSchema = z.object({
   type: z.enum(["audio", "image"]),
-  file_name: z.string().min(1),
+  file_name: z.string().min(1).max(255),
   content_type: z.string().min(1),
-  byte_size: z.number().positive(),
+  byte_size: z.number().positive().max(MAX_AUDIO_SIZE, {
+    message: `File size must not exceed ${MAX_AUDIO_SIZE / (1024 * 1024)}MB`,
+  }),
 });
 
 const completeUploadSchema = z.object({
@@ -41,6 +47,23 @@ assetRoutes.post("/upload-url", async (c) => {
         {
           field: "content_type",
           reason: `must be one of: ${allowedTypes.join(", ")}`,
+        },
+      ],
+    );
+  }
+
+  // Validate file size based on type
+  const maxSize = data.type === "audio" ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE;
+  if (data.byte_size > maxSize) {
+    const maxSizeMB = maxSize / (1024 * 1024);
+    throw new AppError(
+      400,
+      "file_too_large",
+      `${data.type === "audio" ? "Audio" : "Image"} file size must not exceed ${maxSizeMB}MB`,
+      [
+        {
+          field: "byte_size",
+          reason: `must not exceed ${maxSizeMB}MB`,
         },
       ],
     );
@@ -115,7 +138,28 @@ assetRoutes.put("/:assetId/upload", async (c) => {
     throw new AppError(404, "not_found", "Asset not found");
   }
 
+  // Verify Content-Length header matches expected size (with 5% tolerance for encoding)
+  const contentLength = parseInt(c.req.header("Content-Length") || "0", 10);
+  const maxAllowedSize = Math.ceil(asset.byteSize * 1.05); // 5% tolerance
+  if (contentLength > maxAllowedSize) {
+    throw new AppError(
+      400,
+      "size_mismatch",
+      "Upload size exceeds the declared file size"
+    );
+  }
+
   const body = await c.req.arrayBuffer();
+
+  // Verify actual upload size
+  if (body.byteLength > maxAllowedSize) {
+    throw new AppError(
+      400,
+      "size_mismatch",
+      "Actual upload size exceeds the declared file size"
+    );
+  }
+
   const bucket = c.env.BUCKET;
 
   await bucket.put(asset.storageKey, body, {
@@ -123,6 +167,12 @@ assetRoutes.put("/:assetId/upload", async (c) => {
       contentType: asset.contentType,
     },
   });
+
+  // Update actual size in database
+  await db
+    .update(assets)
+    .set({ byteSize: body.byteLength })
+    .where(eq(assets.id, assetId));
 
   return c.json({ message: "Upload successful" });
 });

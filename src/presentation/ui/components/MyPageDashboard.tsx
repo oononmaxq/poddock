@@ -1,27 +1,13 @@
 import { useEffect, useState } from 'preact/hooks';
 import { PlaybackHistoryPanel } from './PlaybackHistoryPanel';
+import { EpisodeInlineCard } from './EpisodeInlineCard';
+import { resolvePlayableUrl } from '../utils/playable-url';
 
 interface SubscriptionItem {
   sourceId: string;
-  sourceName: string | null;
   feedTitle: string;
   feedImageUrl: string | null;
   category: string | null;
-  feedUrl: string;
-  subscribedAt: string;
-}
-
-interface LatestEpisodeItem {
-  id: string;
-  sourceId: string;
-  sourceName: string;
-  feedTitle: string;
-  feedImageUrl: string | null;
-  title: string;
-  description: string;
-  pubDate: string | null;
-  link: string | null;
-  enclosureUrl: string | null;
 }
 
 interface FavoriteEpisodeItem {
@@ -30,45 +16,26 @@ interface FavoriteEpisodeItem {
   title: string;
   podcastTitle: string;
   coverImageUrl: string | null;
-  link: string | null;
   enclosureUrl: string | null;
-  pubDate: string | null;
-  createdAt: string;
-}
-
-function resolvePlayableUrl(url: string) {
-  const anchorRedirectPattern = /\/podcast\/play\/\d+\/(.+)$/;
-  const match = url.match(anchorRedirectPattern);
-  if (match?.[1]) {
-    try {
-      return decodeURIComponent(match[1]);
-    } catch {
-      return url;
-    }
-  }
-  return url;
 }
 
 export function MyPageDashboard() {
+  const DASHBOARD_LIMIT = 5;
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
-  const [latestEpisodes, setLatestEpisodes] = useState<LatestEpisodeItem[]>([]);
   const [favoriteEpisodes, setFavoriteEpisodes] = useState<FavoriteEpisodeItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [subsRes, latestRes, favoritesRes] = await Promise.all([
+      const [subsRes, favoritesRes] = await Promise.all([
         fetch('/api/channel-subscriptions', { credentials: 'include' }),
-        fetch('/api/channel-subscriptions/latest?limit=24', { credentials: 'include' }),
-        fetch('/api/episode-favorites?limit=24', { credentials: 'include' }),
+        fetch(`/api/episode-favorites?limit=${DASHBOARD_LIMIT}`, { credentials: 'include' }),
       ]);
 
       if (
         subsRes.status === 401 ||
         subsRes.status === 403 ||
-        latestRes.status === 401 ||
-        latestRes.status === 403 ||
         favoritesRes.status === 401 ||
         favoritesRes.status === 403
       ) {
@@ -79,10 +46,6 @@ export function MyPageDashboard() {
       if (subsRes.ok) {
         const subsData = (await subsRes.json()) as { items: SubscriptionItem[] };
         setSubscriptions(subsData.items);
-      }
-      if (latestRes.ok) {
-        const latestData = (await latestRes.json()) as { items: LatestEpisodeItem[] };
-        setLatestEpisodes(latestData.items);
       }
       if (favoritesRes.ok) {
         const favoritesData = (await favoritesRes.json()) as { items: FavoriteEpisodeItem[] };
@@ -96,22 +59,6 @@ export function MyPageDashboard() {
   useEffect(() => {
     void load();
   }, []);
-
-  const handlePlay = (item: LatestEpisodeItem) => {
-    if (!item.enclosureUrl) return;
-    window.dispatchEvent(
-      new CustomEvent('poddock:play-episode', {
-        detail: {
-          id: `${item.sourceId}:${item.id}`,
-          title: item.title || '(untitled)',
-          podcastId: item.sourceId,
-          podcastTitle: item.feedTitle,
-          audioUrl: resolvePlayableUrl(item.enclosureUrl),
-          coverImageUrl: item.feedImageUrl || undefined,
-        },
-      })
-    );
-  };
 
   const handlePlayFavorite = (item: FavoriteEpisodeItem) => {
     if (!item.enclosureUrl) return;
@@ -139,7 +86,7 @@ export function MyPageDashboard() {
 
   return (
     <div class="space-y-10">
-      <PlaybackHistoryPanel limit={30} />
+      <PlaybackHistoryPanel limit={DASHBOARD_LIMIT} moreHref="/mypage/playback-history" />
 
       <section>
         <div class="flex items-center justify-between mb-3">
@@ -149,43 +96,23 @@ export function MyPageDashboard() {
         {favoriteEpisodes.length === 0 ? (
           <div class="alert">まだお気に入りがありません。エピソードの☆ボタンから追加できます。</div>
         ) : (
-          <div class="space-y-3">
+          <div class="space-y-2">
             {favoriteEpisodes.map((item) => (
-              <article class="card border border-base-300 bg-base-100">
-                <div class="card-body">
-                  <div class="flex items-start gap-3">
-                    <button
-                      type="button"
-                      class="btn btn-circle btn-sm btn-primary mt-1"
-                      onClick={() => handlePlayFavorite(item)}
-                      disabled={!item.enclosureUrl}
-                      aria-label="再生"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                        <path d="M8 5.14v14l11-7-11-7z" />
-                      </svg>
-                    </button>
-                    <div class="min-w-0 flex-1">
-                      <p class="text-xs text-base-content/60">{item.podcastTitle}</p>
-                      <h3 class="font-semibold">{item.title || '(untitled)'}</h3>
-                      <div class="mt-2 flex flex-wrap gap-2 text-xs text-base-content/60">
-                        <span>{item.pubDate || '公開日なし'}</span>
-                        <a href={`/feeds/${item.sourceId}`} class="link link-primary">
-                          番組へ
-                        </a>
-                        {item.link && (
-                          <a href={item.link} target="_blank" rel="noopener noreferrer" class="link link-primary">
-                            詳細
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </article>
+              <EpisodeInlineCard
+                key={`${item.sourceId}:${item.episodeKey}`}
+                title={item.title || '(untitled)'}
+                imageUrl={item.coverImageUrl}
+                imageAlt={item.podcastTitle}
+                onPlay={() => handlePlayFavorite(item)}
+                playAriaLabel="再生"
+                disabled={!item.enclosureUrl}
+              />
             ))}
           </div>
         )}
+        <div class="mt-3 flex justify-end">
+          <a href="/mypage/favorites" class="btn btn-sm btn-outline">もっとみる</a>
+        </div>
       </section>
 
       <section>
@@ -198,7 +125,7 @@ export function MyPageDashboard() {
         ) : (
           <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {subscriptions.map((item) => (
-              <a href={`/feeds/${item.sourceId}`} class="group block">
+              <a href={`/feeds/${item.sourceId}`} class="group block" key={item.sourceId}>
                 <div class="overflow-hidden rounded-xl border border-base-300 bg-base-200">
                   {item.feedImageUrl ? (
                     <img
@@ -219,56 +146,6 @@ export function MyPageDashboard() {
                   </div>
                 </div>
               </a>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xl font-bold">登録チャンネルの最新エピソード</h2>
-          <span class="badge badge-outline">{latestEpisodes.length}件</span>
-        </div>
-        {latestEpisodes.length === 0 ? (
-          <div class="alert">登録チャンネルの最新エピソードはまだありません。</div>
-        ) : (
-          <div class="space-y-3">
-            {latestEpisodes.map((item) => (
-              <article class="card border border-base-300 bg-base-100">
-                <div class="card-body">
-                  <div class="flex items-start gap-3">
-                    <button
-                      type="button"
-                      class="btn btn-circle btn-sm btn-primary mt-1"
-                      onClick={() => handlePlay(item)}
-                      disabled={!item.enclosureUrl}
-                      aria-label="再生"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                        <path d="M8 5.14v14l11-7-11-7z" />
-                      </svg>
-                    </button>
-                    <div class="min-w-0 flex-1">
-                      <p class="text-xs text-base-content/60">{item.feedTitle}</p>
-                      <h3 class="font-semibold">{item.title || '(untitled)'}</h3>
-                      {item.description && (
-                        <p class="text-sm text-base-content/70 line-clamp-2 mt-1">{item.description}</p>
-                      )}
-                      <div class="mt-2 flex flex-wrap gap-2 text-xs text-base-content/60">
-                        <span>{item.pubDate || '公開日なし'}</span>
-                        <a href={`/feeds/${item.sourceId}`} class="link link-primary">
-                          番組へ
-                        </a>
-                        {item.link && (
-                          <a href={item.link} target="_blank" rel="noopener noreferrer" class="link link-primary">
-                            詳細
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </article>
             ))}
           </div>
         )}

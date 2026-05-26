@@ -8,8 +8,8 @@ import { and, eq } from 'drizzle-orm';
 import { FeedEpisodeList } from '../../presentation/ui/components/FeedEpisodeList';
 import { FixedAudioPlayer } from '../../presentation/ui/components/FixedAudioPlayer';
 import { ChannelSubscriptionButton } from '../../presentation/ui/components/ChannelSubscriptionButton';
-import { ExpandableText } from '../../presentation/ui/components/ExpandableText';
 import { ToastContainer } from '../../presentation/ui/components/Toast';
+import Pagination from '../../presentation/ui/components/Pagination.astro';
 
 const { sourceId } = Astro.params;
 const db = createDb(Astro.locals.runtime.env.DB);
@@ -39,9 +39,13 @@ try {
 }
 const safeFeed = feed ?? {
   title: source.name || source.id,
+  link: null,
   description: '',
   language: 'ja',
   author: '',
+  copyright: '',
+  ownerName: '',
+  ownerEmail: '',
   imageUrl: null,
   categories: [] as string[],
   items: [] as Array<{
@@ -54,10 +58,11 @@ const safeFeed = feed ?? {
   }>,
 };
 const feedTitle = safeFeed.title || source.name || source.id;
+const feedDescription = safeFeed.description.replace(/\s+/g, ' ').trim();
 const EPISODE_LIMIT = 12;
 const DESCRIPTION_LIMIT = 280;
 const sortParam = Astro.url.searchParams.get('sort');
-const allowedSorts = ['newest', 'oldest', 'title'] as const;
+const allowedSorts = ['newest', 'oldest'] as const;
 type SortKey = (typeof allowedSorts)[number];
 const selectedSort: SortKey = allowedSorts.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'newest';
 const pageParam = Number.parseInt(Astro.url.searchParams.get('page') || '1', 10);
@@ -69,9 +74,6 @@ const truncateText = (text: string, limit: number) => {
 };
 
 const sortedItems = safeFeed.items.slice().sort((a, b) => {
-  if (selectedSort === 'title') {
-    return a.title.localeCompare(b.title, 'ja');
-  }
   const aTime = a.pubDate ? Date.parse(a.pubDate) : 0;
   const bTime = b.pubDate ? Date.parse(b.pubDate) : 0;
   return selectedSort === 'oldest' ? aTime - bTime : bTime - aTime;
@@ -93,6 +95,17 @@ const displayItemsForPlayer = displayItems.map((item, idx) => ({
   link: item.link,
   enclosureUrl: item.enclosureUrl,
 }));
+const firstEpisodeLink = safeFeed.items
+  .filter((item) => Boolean(item.link))
+  .slice()
+  .sort((a, b) => {
+    const aTime = a.pubDate ? Date.parse(a.pubDate) : Number.POSITIVE_INFINITY;
+    const bTime = b.pubDate ? Date.parse(b.pubDate) : Number.POSITIVE_INFINITY;
+    return aTime - bTime;
+  })[0]?.link ?? null;
+const outboundChannelLink = safeFeed.link || firstEpisodeLink;
+const listingInquiryUrl = `/removal-request?sourceId=${encodeURIComponent(source.id)}&feedUrl=${encodeURIComponent(source.feedUrl)}`;
+const hasRightsInfo = Boolean(safeFeed.copyright || safeFeed.ownerName);
 
 const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
   const params = new URLSearchParams();
@@ -101,7 +114,28 @@ const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
   if (sort !== 'newest') params.set('sort', sort);
   if (page > 1) params.set('page', String(page));
   const query = params.toString();
-  return query ? `/feeds/${sourceId}?${query}` : `/feeds/${sourceId}`;
+  return query ? `/feeds/${sourceId}?${query}#episodes` : `/feeds/${sourceId}#episodes`;
+};
+const baseUrl = Astro.locals.runtime.env.BASE_URL || Astro.url.origin;
+const canonicalUrl = new URL(`/feeds/${source.id}`, baseUrl).toString();
+const ogImageUrl = safeFeed.imageUrl || new URL('/mojilogo_white.png', baseUrl).toString();
+const shouldNoindex = safePage > 1 || selectedSort !== 'newest';
+const robotsContent = shouldNoindex ? 'noindex,follow' : 'index,follow';
+const feedMetaDescription = (safeFeed.description || `${feedTitle} の番組情報`).slice(0, 160);
+const podcastJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'PodcastSeries',
+  name: feedTitle,
+  description: safeFeed.description || '',
+  inLanguage: safeFeed.language || 'ja',
+  image: ogImageUrl,
+  url: canonicalUrl,
+  author: safeFeed.author
+    ? {
+        '@type': 'Person',
+        name: safeFeed.author,
+      }
+    : undefined,
 };
 ---
 
@@ -112,7 +146,21 @@ const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{feedTitle} | PODDOCK</title>
-    <meta name="description" content={safeFeed.description || `${feedTitle} の番組情報`} />
+    <meta name="description" content={feedMetaDescription} />
+    <meta name="robots" content={robotsContent} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PODDOCK" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:title" content={`${feedTitle} | PODDOCK`} />
+    <meta property="og:description" content={feedMetaDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${feedTitle} | PODDOCK`} />
+    <meta name="twitter:description" content={feedMetaDescription} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <script type="application/ld+json" set:html={JSON.stringify(podcastJsonLd)} />
     <ViewTransitions />
   </head>
   <body class="min-h-screen bg-base-100 pb-28">
@@ -123,42 +171,78 @@ const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
         </a>
       </div>
       <div class="flex-none">
-        <a href="/mypage" class="btn btn-ghost btn-sm">マイページ</a>
-        <a href="/podcasts" class="btn btn-ghost">番組一覧へ戻る</a>
+        {isLoggedIn ? (
+          <div class="dropdown dropdown-end">
+            <div tabIndex={0} role="button" class="btn btn-ghost btn-circle" aria-label="メニュー">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </div>
+            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+              <li><a href="/">トップページ</a></li>
+              <li><a href="/mypage">マイページ</a></li>
+              <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+              <li><button type="button" id="logout-btn">ログアウト</button></li>
+            </ul>
+          </div>
+        ) : (
+          <div class="dropdown dropdown-end">
+            <div tabIndex={0} role="button" class="btn btn-ghost btn-circle" aria-label="メニュー">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </div>
+            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+              <li><a href="/login">ログイン</a></li>
+              <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+            </ul>
+          </div>
+        )}
       </div>
     </header>
 
-    <main class="px-4 sm:px-6 lg:px-12 py-10">
+    <main class="px-4 sm:px-6 lg:px-12 pt-2 sm:pt-4 pb-10">
       <div class="max-w-5xl mx-auto">
-        <div class="flex flex-col md:flex-row gap-6 mb-10">
-          {safeFeed.imageUrl && (
-            <img src={safeFeed.imageUrl} alt={feedTitle} class="w-40 h-40 rounded-xl object-cover shadow-md" />
-          )}
-          <div class="flex-1">
-            <h1 class="text-3xl font-bold mb-3">{feedTitle}</h1>
-            {safeFeed.description ? (
-              <ExpandableText client:load text={safeFeed.description} />
+        <div class="mb-4">
+          <div class="relative overflow-hidden rounded-xl border border-base-300 bg-base-200 mb-4">
+            {safeFeed.imageUrl ? (
+              <img src={safeFeed.imageUrl} alt={feedTitle} class="w-full aspect-square object-cover" />
             ) : (
-              <p class="text-base-content/70">説明はありません。</p>
+              <div class="w-full aspect-square bg-base-300 flex items-center justify-center">
+                <span class="text-base-content/50">No Image</span>
+              </div>
             )}
-            <div class="mt-4 flex flex-wrap gap-2">
-              {safeFeed.author && <span class="badge">{safeFeed.author}</span>}
-              {safeFeed.language && <span class="badge badge-ghost">{safeFeed.language}</span>}
-              {safeFeed.categories.map((category) => (
-                <span class="badge badge-outline">{category}</span>
-              ))}
-              <span class="badge badge-primary badge-outline">Episodes: {safeFeed.items.length}</span>
+            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-3 py-2">
+              <div class="channel-title-marquee text-white text-base sm:text-lg font-bold">
+                <span>{feedTitle}</span>
+              </div>
             </div>
-            <div class="mt-4">
-              <a href={source.feedUrl} class="link link-primary break-all" target="_blank" rel="noopener noreferrer">{source.feedUrl}</a>
-            </div>
-            <div class="mt-4">
-              <ChannelSubscriptionButton client:load sourceId={source.id} initialLoggedIn={isLoggedIn} />
-            </div>
+          </div>
+          {feedDescription ? (
+            <>
+              <p class="text-sm text-base-content/80 overflow-hidden text-ellipsis whitespace-nowrap">
+                {feedDescription}
+              </p>
+              <div class="mt-1 flex justify-end">
+                <button type="button" class="link link-hover text-xs text-base-content/70" onclick="document.getElementById('feed-description-dialog')?.showModal()">
+                  詳細表示
+                </button>
+              </div>
+            </>
+          ) : (
+            <p class="text-base-content/70">説明はありません。</p>
+          )}
+          <div class="mt-3 flex items-center justify-end gap-2 flex-wrap">
+            {outboundChannelLink && (
+              <a href={outboundChannelLink} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">
+                配信元ページ
+              </a>
+            )}
+            <ChannelSubscriptionButton client:load sourceId={source.id} initialLoggedIn={isLoggedIn} />
           </div>
         </div>
 
-        <section>
+        <section id="episodes">
           {feedErrorMessage && (
             <div class="alert alert-warning mb-4">
               <span>RSSの取得に失敗しました。時間をおいて再度アクセスしてください。</span>
@@ -176,9 +260,6 @@ const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
             <a href={buildFeedUrl({ sort: 'oldest', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'oldest', 'btn-ghost': selectedSort !== 'oldest' }]}>
               古い順
             </a>
-            <a href={buildFeedUrl({ sort: 'title', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'title', 'btn-ghost': selectedSort !== 'title' }]}>
-              タイトル
-            </a>
           </div>
           {displayItems.length === 0 ? (
             <div class="alert">エピソードがありません。</div>
@@ -192,24 +273,7 @@ const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
             />
           )}
 
-          {totalPages > 1 && (
-            <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
-              <a href={buildFeedUrl({ page: Math.max(1, safePage - 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage <= 1 }]}>
-                前へ
-              </a>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <a
-                  href={buildFeedUrl({ page })}
-                  class:list={['btn btn-sm', { 'btn-primary': page === safePage, 'btn-ghost': page !== safePage }]}
-                >
-                  {page}
-                </a>
-              ))}
-              <a href={buildFeedUrl({ page: Math.min(totalPages, safePage + 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage >= totalPages }]}>
-                次へ
-              </a>
-            </div>
-          )}
+          <Pagination currentPage={safePage} totalPages={totalPages} getPageUrl={(page) => buildFeedUrl({ page })} />
         </section>
       </div>
     </main>
@@ -218,5 +282,92 @@ const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
     </div>
     <ToastContainer client:load />
     <ClientRouter />
+    <dialog id="about-poddock-dialog" class="modal">
+      <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg">ポッドドックとは？</h3>
+        <p class="py-2 text-sm text-base-content/80 leading-relaxed">
+          ポッドドックは、Podcastを見つけやすくするための発見サイトです。
+          RSSなど公開されている情報をベースに、番組情報を掲載しています。
+          カテゴリや更新順で番組を探し、気になる番組の詳細ページからすぐ再生できます。
+        </p>
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn btn-sm">閉じる</button>
+          </form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+    <dialog id="feed-description-dialog" class="modal">
+      <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg mb-2">番組説明</h3>
+        <p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap break-words">
+          {feedDescription || '説明はありません。'}
+        </p>
+        {hasRightsInfo && (
+          <div class="mt-3 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-xs text-base-content/80 space-y-1">
+            {safeFeed.copyright && (
+              <p>
+                <span class="font-semibold">権利表記:</span> {safeFeed.copyright}
+              </p>
+            )}
+            {safeFeed.ownerName && (
+              <p>
+                <span class="font-semibold">権利者名:</span> {safeFeed.ownerName}
+              </p>
+            )}
+          </div>
+        )}
+        <div class="mt-3 flex justify-end">
+          <a href={listingInquiryUrl} class="link link-hover text-xs text-base-content/70">
+            この掲載に関する問い合わせ
+          </a>
+        </div>
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn btn-sm">閉じる</button>
+          </form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+    <script>
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        } catch {
+          // ignore
+        }
+        window.location.href = '/login';
+      });
+    </script>
+    <style>
+      @keyframes channel-title-marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-100%); }
+      }
+      .channel-title-marquee {
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .channel-title-marquee > span {
+        display: inline-block;
+        padding-left: 100%;
+        animation: channel-title-marquee 16s linear infinite;
+        will-change: transform;
+        white-space: nowrap;
+        line-height: 1.1;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .channel-title-marquee > span {
+          animation: none;
+          padding-left: 0;
+        }
+      }
+    </style>
   </body>
 </html>

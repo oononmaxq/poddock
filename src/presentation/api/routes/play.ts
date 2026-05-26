@@ -9,16 +9,30 @@ import { nowISO } from '@infrastructure/utils/date';
 
 export const playRoutes = new Hono<AppEnv>();
 
-// Hash IP address for privacy
-function hashIp(ip: string): string {
-  // Simple hash for privacy - not cryptographically secure but sufficient for analytics
-  let hash = 0;
-  for (let i = 0; i < ip.length; i++) {
-    const char = ip.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash.toString(36);
+// Hash IP address for privacy using HMAC-SHA256
+// This provides cryptographically secure hashing that prevents rainbow table attacks
+async function hashIp(ip: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+
+  // Import the secret as HMAC key
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  // Sign the IP address
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(ip)
+  );
+
+  // Convert to hex string (truncated to 16 chars for storage efficiency)
+  const hashArray = Array.from(new Uint8Array(signature));
+  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Get current year-month in YYYY-MM format
@@ -67,12 +81,16 @@ playRoutes.get('/:episodeId', async (c) => {
   const userAgent = c.req.header('User-Agent') || '';
   const country = c.req.header('CF-IPCountry') || '';
 
+  // Hash IP with HMAC-SHA256 using JWT_SECRET as the key
+  // This ensures consistent hashing across workers while preventing rainbow table attacks
+  const ipHash = clientIp ? await hashIp(clientIp, c.env.JWT_SECRET) : null;
+
   // Insert play log
   await db.insert(playLogs).values({
     id: generateId(),
     episodeId,
     podcastId: episode.podcastId,
-    ipHash: clientIp ? hashIp(clientIp) : null,
+    ipHash,
     userAgent: userAgent.substring(0, 500), // Limit length
     country: country || null,
     playedAt: now,

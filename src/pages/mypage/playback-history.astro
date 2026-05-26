@@ -1,8 +1,8 @@
 ---
-import '../styles/global.css';
+import '../../styles/global.css';
 import { ClientRouter, ViewTransitions } from 'astro:transitions';
-import { MyPageDashboard } from '../presentation/ui/components/MyPageDashboard';
-import { FixedAudioPlayer } from '../presentation/ui/components/FixedAudioPlayer';
+import { FixedAudioPlayer } from '../../presentation/ui/components/FixedAudioPlayer';
+import { PlaybackHistoryPage } from '../../presentation/ui/components/PlaybackHistoryPage';
 
 const cookieHeader = Astro.request.headers.get('cookie') || '';
 const isLoggedIn = cookieHeader.includes('access_token=');
@@ -17,8 +17,7 @@ if (!isLoggedIn) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>マイページ | PODDOCK</title>
-    <meta name="description" content="再生履歴と登録チャンネルの最新エピソードを確認できるマイページです。" />
+    <title>再生履歴 | PODDOCK</title>
     <ViewTransitions />
   </head>
   <body class="min-h-screen bg-base-100 pb-28">
@@ -44,14 +43,12 @@ if (!isLoggedIn) {
         </div>
       </div>
     </header>
-
     <main class="px-4 sm:px-6 lg:px-12 py-6">
       <div class="max-w-5xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">マイページ</h1>
-        <MyPageDashboard client:load />
+        <h1 class="text-3xl font-bold mb-6">再生履歴</h1>
+        <PlaybackHistoryPage client:load />
       </div>
     </main>
-
     <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
       <FixedAudioPlayer client:load />
     </div>
@@ -74,7 +71,6 @@ if (!isLoggedIn) {
         <button>close</button>
       </form>
     </dialog>
-
     <script>
       document.getElementById('logout-btn')?.addEventListener('click', async () => {
         try {

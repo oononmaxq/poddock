@@ -1,0 +1,58 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+  getPageUrl: (page: number) => string;
+  maxPageButtons?: number;
+  class?: string;
+}
+
+const {
+  currentPage,
+  totalPages,
+  getPageUrl,
+  maxPageButtons = 5,
+  class: className = 'mt-8 flex items-center justify-center gap-0.5 whitespace-nowrap',
+} = Astro.props;
+
+const paginationStart = Math.max(
+  1,
+  Math.min(currentPage - Math.floor(maxPageButtons / 2), totalPages - maxPageButtons + 1)
+);
+const paginationEnd = Math.min(totalPages, paginationStart + maxPageButtons - 1);
+const visiblePages = Array.from({ length: paginationEnd - paginationStart + 1 }, (_, i) => paginationStart + i);
+---
+
+{totalPages > 1 && (
+  <nav class={className} aria-label="pagination">
+    <a href={getPageUrl(1)} class:list={['btn btn-xs', { 'btn-disabled': currentPage <= 1 }]} aria-label="First page">
+      &lt;&lt;
+    </a>
+    <a
+      href={getPageUrl(Math.max(1, currentPage - 1))}
+      class:list={['btn btn-xs', { 'btn-disabled': currentPage <= 1 }]}
+      aria-label="Previous page"
+    >
+      &lt;
+    </a>
+    {visiblePages.map((page) => (
+      <a
+        href={getPageUrl(page)}
+        class:list={['btn btn-xs', { 'btn-primary': page === currentPage, 'btn-ghost': page !== currentPage }]}
+        aria-current={page === currentPage ? 'page' : undefined}
+      >
+        {page}
+      </a>
+    ))}
+    <a
+      href={getPageUrl(Math.min(totalPages, currentPage + 1))}
+      class:list={['btn btn-xs', { 'btn-disabled': currentPage >= totalPages }]}
+      aria-label="Next page"
+    >
+      &gt;
+    </a>
+    <a href={getPageUrl(totalPages)} class:list={['btn btn-xs', { 'btn-disabled': currentPage >= totalPages }]} aria-label="Last page">
+      &gt;&gt;
+    </a>
+  </nav>
+)}

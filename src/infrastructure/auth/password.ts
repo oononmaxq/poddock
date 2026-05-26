@@ -21,14 +21,23 @@ export async function hashPassword(password: string): Promise<string> {
   return `pbkdf2:${ITERATIONS}:${saltHex}:${hashHex}`;
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  stored: string,
+  options?: { allowLegacyDev?: boolean }
+): Promise<boolean> {
   const parts = stored.split(':');
 
-  // Support legacy bcrypt hashes (for seed data - will be replaced on first login)
+  // Legacy bcrypt hashes are not supported
+  // In development, can be explicitly allowed for seed data testing only
   if (stored.startsWith('$2')) {
-    // For development: accept 'admin123' for the seed account
-    // In production, force password reset
-    return password === 'admin123';
+    if (options?.allowLegacyDev) {
+      console.warn('[SECURITY] Legacy bcrypt verification used - development only');
+      return password === 'admin123';
+    }
+    // Production: Always reject legacy hashes - force password reset
+    console.error('[SECURITY] Rejected legacy bcrypt hash - migration required');
+    return false;
   }
 
   if (parts.length !== 4 || parts[0] !== 'pbkdf2') {

@@ -9,9 +9,13 @@ export interface ParsedRssItem {
 
 export interface ParsedRssFeed {
   title: string;
+  link: string | null;
   description: string;
   language: string;
   author: string;
+  copyright: string;
+  ownerName: string;
+  ownerEmail: string;
   imageUrl: string | null;
   categories: string[];
   items: ParsedRssItem[];
@@ -124,17 +128,31 @@ function parseItems(channelXml: string): ParsedRssItem[] {
   return items;
 }
 
+function parseItunesOwner(channelXml: string): { ownerName: string; ownerEmail: string } {
+  const ownerMatch = channelXml.match(/<itunes:owner[^>]*>([\s\S]*?)<\/itunes:owner>/i);
+  const ownerXml = ownerMatch?.[1] ?? '';
+  return {
+    ownerName: cleanText(firstTagValue(ownerXml, ['itunes:name'])),
+    ownerEmail: cleanText(firstTagValue(ownerXml, ['itunes:email'])),
+  };
+}
+
 export function parseRssXml(xml: string): ParsedRssFeed {
   const channelMatch = xml.match(/<channel[^>]*>([\s\S]*?)<\/channel>/i);
   const channelXml = channelMatch?.[1] ?? xml;
   const imageUrlMatch = channelXml.match(/<itunes:image[^>]*href="([^"]+)"/i)
     ?? channelXml.match(/<image>[\s\S]*?<url>([\s\S]*?)<\/url>[\s\S]*?<\/image>/i);
+  const owner = parseItunesOwner(channelXml);
 
   return {
     title: cleanText(firstTagValue(channelXml, ['title'])),
+    link: cleanText(firstTagValue(channelXml, ['link'])) || null,
     description: cleanDescriptionText(firstTagValue(channelXml, ['description', 'itunes:summary'])),
     language: cleanText(firstTagValue(channelXml, ['language'])),
     author: cleanText(firstTagValue(channelXml, ['itunes:author', 'managingEditor'])),
+    copyright: cleanText(firstTagValue(channelXml, ['copyright'])),
+    ownerName: owner.ownerName,
+    ownerEmail: owner.ownerEmail,
     imageUrl: imageUrlMatch?.[1] ? cleanText(imageUrlMatch[1]) : null,
     categories: collectCategories(channelXml),
     items: parseItems(channelXml),
