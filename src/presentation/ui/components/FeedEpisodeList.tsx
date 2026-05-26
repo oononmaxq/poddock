@@ -3,7 +3,7 @@ import { ExpandableText } from './ExpandableText';
 import { useEffect, useState } from 'preact/hooks';
 import { showToast } from './Toast';
 import { resolvePlayableUrl } from '../utils/playable-url';
-import { currentEpisode, isPlaying } from '../stores/audio-store';
+import { currentEpisode, isPlaying, setFeedEpisodes, type FeedEpisodeInfo } from '../stores/audio-store';
 
 interface FeedEpisodeItem {
   id: string;
@@ -56,6 +56,23 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
   const handlePlay = (item: FeedEpisodeItem) => {
     const playableUrl = resolveEpisodePlayableUrl(item);
     if (!playableUrl) return;
+
+    // Build feed episodes list for prev/next navigation
+    const feedEpisodesList: FeedEpisodeInfo[] = items
+      .map((ep) => {
+        const url = resolveEpisodePlayableUrl(ep);
+        if (!url) return null;
+        return {
+          id: `${sourceId}:${ep.id}`,
+          title: ep.title || '(untitled)',
+          audioUrl: resolvePlayableUrl(url),
+          coverImageUrl: podcastImageUrl || undefined,
+        };
+      })
+      .filter((ep): ep is FeedEpisodeInfo => ep !== null);
+
+    setFeedEpisodes(sourceId, podcastTitle, feedEpisodesList);
+
     const episode = {
       id: `${sourceId}:${item.id}`,
       title: item.title || '(untitled)',

@@ -6,13 +6,17 @@ import {
   progress,
   formattedCurrentTime,
   formattedDuration,
+  playbackRate,
+  currentFeedEpisodes,
+  currentFeedPodcastId,
+  currentFeedPodcastTitle,
   getAudioElement,
-  getLocalPlaybackHistory,
   playEpisode,
   togglePlay,
   seekByPercent,
   skipBackward,
   skipForward,
+  setPlaybackRate,
 } from '../stores/audio-store';
 
 export function PlayerScreen() {
@@ -47,25 +51,40 @@ export function PlayerScreen() {
   }
 
   const progressPercent = Math.max(0, Math.min(progress.value, 100));
-  const history = getLocalPlaybackHistory(50);
-  const currentHistoryIndex = history.findIndex((item) => item.episodeId === episode.id);
-  const previousHistoryItem = currentHistoryIndex >= 0 ? history[currentHistoryIndex + 1] : null;
-  const nextHistoryItem = currentHistoryIndex > 0 ? history[currentHistoryIndex - 1] : null;
 
-  const playFromHistory = (direction: 'prev' | 'next') => {
-    const target = direction === 'prev' ? previousHistoryItem : nextHistoryItem;
+  // Find current episode index in feed episodes list
+  const feedEpisodes = currentFeedEpisodes.value;
+  const currentFeedIndex = feedEpisodes.findIndex((ep) => ep.id === episode.id);
+  const hasFeedContext = currentFeedIndex >= 0 && currentFeedPodcastId.value === episode.podcastId;
+
+  // Previous = next in list (older episode), Next = previous in list (newer episode)
+  const previousFeedEpisode = hasFeedContext && currentFeedIndex < feedEpisodes.length - 1
+    ? feedEpisodes[currentFeedIndex + 1]
+    : null;
+  const nextFeedEpisode = hasFeedContext && currentFeedIndex > 0
+    ? feedEpisodes[currentFeedIndex - 1]
+    : null;
+
+  const playFeedEpisode = (direction: 'prev' | 'next') => {
+    const target = direction === 'prev' ? previousFeedEpisode : nextFeedEpisode;
     if (!target) return;
     const nextEpisode: Episode = {
-      id: target.episodeId,
+      id: target.id,
       title: target.title,
-      podcastId: target.podcastId,
-      podcastTitle: target.podcastTitle,
+      podcastId: currentFeedPodcastId.value!,
+      podcastTitle: currentFeedPodcastTitle.value,
       audioUrl: target.audioUrl,
       coverImageUrl: target.coverImageUrl,
       durationSeconds: target.durationSeconds,
-      initialTimeSeconds: target.lastPositionSeconds,
     };
     playEpisode(nextEpisode);
+  };
+
+  const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  const cyclePlaybackRate = () => {
+    const currentIndex = PLAYBACK_RATES.indexOf(playbackRate.value);
+    const nextIndex = (currentIndex + 1) % PLAYBACK_RATES.length;
+    setPlaybackRate(PLAYBACK_RATES[nextIndex]);
   };
 
   return (
@@ -152,20 +171,30 @@ export function PlayerScreen() {
               </svg>
             </button>
           </div>
-          <div class="mt-6 grid grid-cols-2 gap-3">
+          <div class="mt-4 flex justify-center">
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost text-white/80 hover:text-white font-mono tabular-nums"
+              onClick={cyclePlaybackRate}
+              aria-label="再生速度"
+            >
+              {playbackRate.value}x
+            </button>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3">
             <button
               type="button"
               class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white disabled:border-white/20 disabled:text-white/40"
-              onClick={() => playFromHistory('prev')}
-              disabled={!previousHistoryItem}
+              onClick={() => playFeedEpisode('prev')}
+              disabled={!previousFeedEpisode}
             >
               前のエピソード
             </button>
             <button
               type="button"
               class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white disabled:border-white/20 disabled:text-white/40"
-              onClick={() => playFromHistory('next')}
-              disabled={!nextHistoryItem}
+              onClick={() => playFeedEpisode('next')}
+              disabled={!nextFeedEpisode}
             >
               次のエピソード
             </button>
