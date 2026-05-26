@@ -110,7 +110,8 @@ const categoryStats = CATEGORY_CANONICAL
   .map((name) => ({ name, count: categoryCountMap.get(name) ?? 0 }))
   .filter((category) => category.count > 0);
 
-const latestSortExpr = sql`COALESCE(${rssSourceSnapshots.latestPublishedAt}, ${rssSources.updatedAt})`;
+// Sort by latest episode publish date (nulls treated as very old)
+const latestSortExpr = sql`COALESCE(${rssSourceSnapshots.latestPublishedAt}, '1970-01-01')`;
 const titleSortExpr = sql`COALESCE(${rssSourceSnapshots.feedTitle}, ${rssSources.name}, ${rssSources.id})`;
 
 let totalItems = 0;
@@ -157,8 +158,9 @@ if (!selectedCategory) {
     if (selectedSort === 'episodes') {
       return b.episodeCount - a.episodeCount;
     }
-    const aTime = a.latestPublishedAt ? Date.parse(a.latestPublishedAt) : Date.parse(a.sourceUpdatedAt);
-    const bTime = b.latestPublishedAt ? Date.parse(b.latestPublishedAt) : Date.parse(b.sourceUpdatedAt);
+    // Sort by latest episode publish date (nulls treated as very old)
+    const aTime = a.latestPublishedAt ? Date.parse(a.latestPublishedAt) : 0;
+    const bTime = b.latestPublishedAt ? Date.parse(b.latestPublishedAt) : 0;
     return bTime - aTime;
   });
 
