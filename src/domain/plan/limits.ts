@@ -104,8 +104,6 @@ export function checkMonthlyPlayLimit(currentPlays: number, plan: Plan): LimitCh
   return { allowed: true };
 }
 
-export function canAccessAnalytics(plan: Plan): boolean {
-  // TODO: MVP後にStarter以上に制限する
-  // return plan === 'starter' || plan === 'pro';
+export function canAccessAnalytics(_plan: Plan): boolean {
   return true;
 }

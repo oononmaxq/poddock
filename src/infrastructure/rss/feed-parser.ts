@@ -9,6 +9,7 @@ export interface ParsedRssItem {
 
 export interface ParsedRssFeed {
   title: string;
+  link: string | null;
   description: string;
   language: string;
   author: string;
@@ -132,6 +133,7 @@ export function parseRssXml(xml: string): ParsedRssFeed {
 
   return {
     title: cleanText(firstTagValue(channelXml, ['title'])),
+    link: cleanText(firstTagValue(channelXml, ['link'])) || null,
     description: cleanDescriptionText(firstTagValue(channelXml, ['description', 'itunes:summary'])),
     language: cleanText(firstTagValue(channelXml, ['language'])),
     author: cleanText(firstTagValue(channelXml, ['itunes:author', 'managingEditor'])),

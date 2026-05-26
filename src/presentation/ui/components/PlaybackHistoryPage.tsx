@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'preact/hooks';
 import {
-  PLAYBACK_HISTORY_UPDATED_EVENT,
   getLocalPlaybackHistory,
-  type PlaybackHistoryItem,
   type Episode,
+  type PlaybackHistoryItem,
 } from '../stores/audio-store';
 import { EpisodeInlineCard } from './EpisodeInlineCard';
+import { usePaginatedList, type PaginatedFetchResult } from '../hooks/use-paginated-list';
 
 interface ApiHistoryItem {
   episodeId: string;
@@ -23,12 +22,7 @@ interface ApiResponse {
   items: ApiHistoryItem[];
 }
 
-type SourceType = 'db' | 'local';
-
-interface PlaybackHistoryPanelProps {
-  limit?: number;
-  moreHref?: string;
-}
+const PAGE_SIZE = 10;
 
 function toEpisode(item: PlaybackHistoryItem): Episode {
   return {
@@ -57,62 +51,55 @@ function normalizeApiItems(items: ApiHistoryItem[]): PlaybackHistoryItem[] {
   }));
 }
 
-export function PlaybackHistoryPanel({ limit = 10, moreHref }: PlaybackHistoryPanelProps) {
-  const [items, setItems] = useState<PlaybackHistoryItem[]>([]);
-  const [source, setSource] = useState<SourceType>('local');
-
-  const loadHistory = async () => {
-    try {
-      const response = await fetch(`/api/listening-history?limit=${limit}`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const payload = (await response.json()) as ApiResponse;
-        setItems(normalizeApiItems(payload.items));
-        setSource('db');
-        return;
-      }
-      if (response.status !== 401 && response.status !== 403) {
-        return;
-      }
-    } catch {
-      // fall through to local history
+async function fetchBatch(offset: number, limit: number): Promise<PaginatedFetchResult<PlaybackHistoryItem>> {
+  try {
+    const response = await fetch(`/api/listening-history?limit=${limit}&offset=${offset}`, {
+      credentials: 'include',
+    });
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = '/login';
+      return { items: [], hasMore: false };
     }
+    if (response.ok) {
+      const payload = (await response.json()) as ApiResponse;
+      const items = normalizeApiItems(payload.items);
+      return {
+        items,
+        hasMore: items.length === limit,
+      };
+    }
+  } catch {
+    // fall through to local history
+  }
 
-    setItems(getLocalPlaybackHistory(limit));
-    setSource('local');
-  };
+  const localItems = getLocalPlaybackHistory(offset + limit).slice(offset);
+  return { items: localItems, hasMore: false };
+}
 
-  useEffect(() => {
-    void loadHistory();
-  }, [limit]);
+export function PlaybackHistoryPage() {
+  const { items, hasMore, loadingInitial, loadingMore, loadMore } = usePaginatedList<PlaybackHistoryItem>({
+    pageSize: PAGE_SIZE,
+    fetchPage: fetchBatch,
+  });
 
-  useEffect(() => {
-    const onUpdated = () => {
-      if (source === 'db') {
-        void loadHistory();
-        return;
-      }
-      setItems(getLocalPlaybackHistory(limit));
-    };
-    window.addEventListener(PLAYBACK_HISTORY_UPDATED_EVENT, onUpdated);
-    return () => {
-      window.removeEventListener(PLAYBACK_HISTORY_UPDATED_EVENT, onUpdated);
-    };
-  }, [source, limit]);
+  if (loadingInitial) {
+    return (
+      <div class="py-16 text-center">
+        <span class="loading loading-spinner loading-lg" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
-    return null;
+    return <div class="alert">再生履歴はまだありません。</div>;
   }
 
   return (
-    <section class="mb-8">
-      <div class="mb-3">
-        <h2 class="text-xl font-bold">再生履歴</h2>
-      </div>
+    <section class="space-y-3">
       <div class="grid gap-2">
         {items.map((item) => (
           <EpisodeInlineCard
+            key={`${item.episodeId}:${item.lastPlayedAt}`}
             title={item.title}
             imageUrl={item.coverImageUrl}
             imageAlt={item.podcastTitle}
@@ -123,9 +110,11 @@ export function PlaybackHistoryPanel({ limit = 10, moreHref }: PlaybackHistoryPa
           />
         ))}
       </div>
-      {moreHref && (
-        <div class="mt-3 flex justify-end">
-          <a href={moreHref} class="btn btn-sm btn-outline">もっとみる</a>
+      {hasMore && (
+        <div class="pt-1 flex justify-center">
+          <button type="button" class="btn btn-outline btn-sm" onClick={() => void loadMore()} disabled={loadingMore}>
+            {loadingMore ? '読み込み中...' : 'もっと見る'}
+          </button>
         </div>
       )}
     </section>

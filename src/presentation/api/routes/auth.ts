@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
+import { getCookie } from 'hono/cookie';
 import { z } from 'zod';
 import { eq, and, gt } from 'drizzle-orm';
 import type { AppEnv } from '../types';
 import { AppError } from '../middleware/error-handler';
 import { createDb } from '@infrastructure/db/client';
 import { adminUsers, magicLinks } from '@infrastructure/db/schema';
-import { createToken } from '@infrastructure/auth/jwt';
+import { createToken, verifyToken } from '@infrastructure/auth/jwt';
 import { generateId } from '@infrastructure/utils/id';
 import { nowISO } from '@infrastructure/utils/date';
 import { sendEmail, createMagicLinkEmail } from '@infrastructure/email/resend';
@@ -25,6 +26,20 @@ export const authRoutes = new Hono<AppEnv>();
 function prefersJson(acceptHeader: string): boolean {
   return acceptHeader.includes('application/json');
 }
+
+authRoutes.get('/status', async (c) => {
+  const token = getCookie(c, 'access_token');
+  if (!token) {
+    return c.json({ authenticated: false });
+  }
+
+  try {
+    await verifyToken(token, c.env.JWT_SECRET);
+    return c.json({ authenticated: true });
+  } catch {
+    return c.json({ authenticated: false });
+  }
+});
 
 // Request magic link - sends email with login link
 authRoutes.post('/magic-link', async (c) => {

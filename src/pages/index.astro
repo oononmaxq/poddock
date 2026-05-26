@@ -3,7 +3,7 @@ import '../styles/global.css';
 import { ClientRouter, ViewTransitions } from 'astro:transitions';
 import { createDb } from '../infrastructure/db/client';
 import { rssSourceSnapshots, rssSources } from '../infrastructure/db/schema';
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { FixedAudioPlayer } from '../presentation/ui/components/FixedAudioPlayer';
 import {
   getCanonicalCategories,
@@ -19,11 +19,13 @@ const selectedCategory = selectedCategoryParam && CATEGORY_CANONICAL.includes(se
   ? (selectedCategoryParam as CanonicalCategory)
   : null;
 const sortParam = Astro.url.searchParams.get('sort');
-const allowedSorts = ['latest', 'episodes', 'title'] as const;
+const allowedSorts = ['latest', 'episodes'] as const;
 type SortKey = (typeof allowedSorts)[number];
 const selectedSort: SortKey = allowedSorts.includes(sortParam as SortKey) ? (sortParam as SortKey) : 'latest';
 const pageParam = Number.parseInt(Astro.url.searchParams.get('page') || '1', 10);
 const currentPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+const cookieHeader = Astro.request.headers.get('cookie') || '';
+const isLoggedIn = cookieHeader.includes('access_token=');
 const userAgent = Astro.request.headers.get('user-agent')?.toLowerCase() || '';
 const isMobileDevice = /iphone|ipod|android.+mobile|windows phone/.test(userAgent);
 const PAGE_SIZE = isMobileDevice ? 12 : 15;
@@ -131,9 +133,7 @@ if (!selectedCategory) {
     .leftJoin(rssSourceSnapshots, eq(rssSources.id, rssSourceSnapshots.sourceId))
     .where(eq(rssSources.isActive, true));
 
-  if (selectedSort === 'title') {
-    query = query.orderBy(asc(titleSortExpr));
-  } else if (selectedSort === 'episodes') {
+  if (selectedSort === 'episodes') {
     query = query.orderBy(desc(rssSourceSnapshots.episodeCount), desc(latestSortExpr));
   } else {
     query = query.orderBy(desc(latestSortExpr));
@@ -153,9 +153,6 @@ if (!selectedCategory) {
     .filter((entry) => entry.normalizedCategories.includes(selectedCategory));
 
   const sorted = filtered.slice().sort((a, b) => {
-    if (selectedSort === 'title') {
-      return a.title.localeCompare(b.title, 'ja');
-    }
     if (selectedSort === 'episodes') {
       return b.episodeCount - a.episodeCount;
     }
@@ -172,6 +169,28 @@ if (!selectedCategory) {
 }
 
 const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+const baseUrl = Astro.locals.runtime.env.BASE_URL || Astro.url.origin;
+const canonicalUrl = new URL(Astro.url.pathname, baseUrl).toString();
+const ogImageUrl = new URL('/mojilogo_white.png', baseUrl).toString();
+const shouldNoindex = safePage > 1 || selectedCategory !== null || selectedSort !== 'latest';
+const robotsContent = shouldNoindex ? 'noindex,follow' : 'index,follow';
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: '番組一覧 | PODDOCK',
+  url: canonicalUrl,
+  description: 'RSSから収集した公開中のPodcast番組一覧。カテゴリ別に番組を探せます。',
+  inLanguage: 'ja',
+  mainEntity: {
+    '@type': 'ItemList',
+    itemListElement: paginatedPodcasts.map((podcast, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: new URL(`/feeds/${podcast.id}`, baseUrl).toString(),
+      name: podcast.title,
+    })),
+  },
+};
 
 const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page?: number }) => {
   const params = new URLSearchParams();
@@ -194,9 +213,23 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>番組一覧 | PODDOCK</title>
     <meta name="description" content="RSSから収集した公開中のPodcast番組一覧。カテゴリ別に番組を探せます。" />
+    <meta name="robots" content={robotsContent} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PODDOCK" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:title" content="番組一覧 | PODDOCK" />
+    <meta property="og:description" content="RSSから収集した公開中のPodcast番組一覧。カテゴリ別に番組を探せます。" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="番組一覧 | PODDOCK" />
+    <meta name="twitter:description" content="RSSから収集した公開中のPodcast番組一覧。カテゴリ別に番組を探せます。" />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
     <ViewTransitions />
   </head>
-  <body class="min-h-screen bg-base-100">
+  <body class="min-h-screen bg-base-100 pb-28">
     <header class="navbar bg-base-100 border-b border-base-200 px-4 sm:px-6 lg:px-12">
       <div class="flex-1">
         <a href="/" class="flex items-center">
@@ -204,26 +237,79 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
         </a>
       </div>
       <div class="flex-none">
-        <a href="/mypage" class="btn btn-ghost btn-sm">マイページ</a>
+        {isLoggedIn ? (
+          <div class="dropdown dropdown-end">
+            <div tabIndex={0} role="button" class="btn btn-ghost btn-circle" aria-label="メニュー">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </div>
+            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+              <li><a href="/">トップページ</a></li>
+              <li><a href="/mypage">マイページ</a></li>
+              <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+              <li><button type="button" id="logout-btn">ログアウト</button></li>
+            </ul>
+          </div>
+        ) : (
+          <div class="dropdown dropdown-end">
+            <div tabIndex={0} role="button" class="btn btn-ghost btn-circle" aria-label="メニュー">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </div>
+            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+              <li><a href="/login">ログイン</a></li>
+              <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+            </ul>
+          </div>
+        )}
       </div>
     </header>
 
-    <main class="px-4 sm:px-6 lg:px-12 py-10">
+    <main class="px-4 sm:px-6 lg:px-12 py-6 sm:py-8">
       <div class="max-w-6xl mx-auto">
-        <h1 class="text-3xl font-bold mb-2">番組一覧</h1>
-        <p class="text-base-content/70 mb-8">RSS情報を収集して表示しています。</p>
-
         {categoryStats.length > 0 && (
-          <div class="mb-8">
-            <p class="text-sm text-base-content/60 mb-3">カテゴリで絞り込み</p>
-            <div class="flex flex-wrap items-center gap-2">
-              <a href={buildPodcastsUrl({ category: null, page: 1 })} class:list={['btn btn-sm', { 'btn-primary': !selectedCategory, 'btn-ghost': selectedCategory }]}>
+          <div class="mb-5 sm:mb-6">
+            <div class="sm:hidden">
+              <div class="dropdown w-full">
+                <div tabIndex={0} role="button" class="btn btn-sm w-full justify-between normal-case border-base-300 bg-base-200">
+                  <span class="truncate">カテゴリ: {selectedCategory ?? 'すべて'}</span>
+                  <span class="text-xs text-base-content/60">選択</span>
+                </div>
+                <ul
+                  tabIndex={0}
+                  class="dropdown-content menu mt-2 w-full rounded-box border border-base-300 bg-base-200 p-2 shadow-lg z-[60] max-h-64 overflow-y-auto"
+                >
+                  <li>
+                    <a
+                      href={buildPodcastsUrl({ category: null, page: 1 })}
+                      class:list={{ active: !selectedCategory }}
+                    >
+                      すべて
+                    </a>
+                  </li>
+                  {categoryStats.map((category) => (
+                    <li>
+                      <a
+                        href={buildPodcastsUrl({ category: category.name, page: 1 })}
+                        class:list={{ active: selectedCategory === category.name }}
+                      >
+                        {category.name} ({category.count})
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div class="hidden sm:flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <a href={buildPodcastsUrl({ category: null, page: 1 })} class:list={['btn btn-xs sm:btn-sm min-h-8 h-8', { 'btn-primary': !selectedCategory, 'btn-ghost': selectedCategory }]}>
                 すべて
               </a>
               {categoryStats.map((category) => (
                 <a
                   href={buildPodcastsUrl({ category: category.name, page: 1 })}
-                  class:list={['btn btn-sm gap-1', { 'btn-primary': selectedCategory === category.name, 'btn-ghost': selectedCategory !== category.name }]}
+                  class:list={['btn btn-xs sm:btn-sm min-h-8 h-8 gap-1', { 'btn-primary': selectedCategory === category.name, 'btn-ghost': selectedCategory !== category.name }]}
                 >
                   {category.name}
                   <span class:list={['badge badge-xs', { 'badge-neutral': selectedCategory === category.name, 'badge-outline': selectedCategory !== category.name }]}>
@@ -243,9 +329,6 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
           <a href={buildPodcastsUrl({ sort: 'episodes', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'episodes', 'btn-ghost': selectedSort !== 'episodes' }]}>
             エピソード数
           </a>
-          <a href={buildPodcastsUrl({ sort: 'title', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'title', 'btn-ghost': selectedSort !== 'title' }]}>
-            タイトル
-          </a>
         </div>
 
         {paginatedPodcasts.length === 0 ? (
@@ -253,7 +336,7 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
             {selectedCategory ? `「${selectedCategory}」の番組はまだありません。` : '表示できる番組はまだありません。'}
           </div>
         ) : (
-          <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div class="grid grid-cols-3 gap-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {paginatedPodcasts.map((podcast) => (
               <a href={`/feeds/${podcast.id}`} class="group block">
                 <div class="overflow-hidden rounded-xl border border-base-300 bg-base-200">
@@ -299,10 +382,37 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
           </div>
         )}
       </div>
+      <dialog id="about-poddock-dialog" class="modal">
+        <div class="modal-box max-w-lg">
+          <h3 class="font-bold text-lg">ポッドドックとは？</h3>
+          <p class="py-2 text-sm text-base-content/80 leading-relaxed">
+            ポッドドックは、Podcastを見つけやすくするための発見サイトです。
+            カテゴリや更新順で番組を探し、気になる番組の詳細ページからすぐ再生できます。
+          </p>
+          <div class="modal-action">
+            <form method="dialog">
+              <button class="btn btn-sm">閉じる</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </main>
     <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
       <FixedAudioPlayer client:load />
     </div>
     <ClientRouter />
+    <script>
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        try {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        } catch {
+          // ignore
+        }
+        window.location.href = '/login';
+      });
+    </script>
   </body>
 </html>

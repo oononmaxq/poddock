@@ -8,6 +8,7 @@ import { nowISO } from '@infrastructure/utils/date';
 
 const listQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 const upsertHistorySchema = z.object({
@@ -27,7 +28,7 @@ export const listeningHistoryRoutes = new Hono<AppEnv>();
 listeningHistoryRoutes.get('/', async (c) => {
   const userId = c.get('userId');
   const db = createDb(c.env.DB);
-  const { limit } = listQuerySchema.parse(c.req.query());
+  const { limit, offset } = listQuerySchema.parse(c.req.query());
 
   const rows = await db
     .select({
@@ -44,7 +45,8 @@ listeningHistoryRoutes.get('/', async (c) => {
     .from(listeningHistories)
     .where(eq(listeningHistories.userId, userId))
     .orderBy(desc(listeningHistories.lastPlayedAt))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
 
   return c.json({ items: rows });
 });

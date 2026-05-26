@@ -209,15 +209,15 @@ export const translations = {
       "届かない場合は迷惑メールフォルダをご確認ください。",
     "login.checkEmail.tryAgain": "別のメールアドレスで試す",
     "login.terms": "利用規約",
-    "login.legal": "特定商取引法",
+    "login.legal": "運営者情報",
     "login.contact": "お問い合わせ",
 
     // Analytics
     "podcast.tabs.analytics": "アナリティクス",
-    "analytics.upgradeRequired": "アップグレードが必要です",
+    "analytics.upgradeRequired": "この機能は準備中です",
     "analytics.upgradeDescription":
-      "アナリティクス機能はStarterプラン以上でご利用いただけます。",
-    "analytics.upgradePlan": "プランをアップグレード",
+      "現在、アナリティクス機能は公開準備中です。",
+    "analytics.upgradePlan": "番組一覧を見る",
     "analytics.overview.title": "再生数概要",
     "analytics.overview.totalPlays": "合計再生数",
     "analytics.overview.currentMonth": "今月の再生数",
@@ -439,15 +439,15 @@ export const translations = {
     "login.checkEmail.spam": "If you don't see it, check your spam folder.",
     "login.checkEmail.tryAgain": "Try a different email",
     "login.terms": "Terms of Service",
-    "login.legal": "Legal",
+    "login.legal": "Operator Info",
     "login.contact": "Contact",
 
     // Analytics
     "podcast.tabs.analytics": "Analytics",
-    "analytics.upgradeRequired": "Upgrade Required",
+    "analytics.upgradeRequired": "Coming Soon",
     "analytics.upgradeDescription":
-      "Analytics is available on Starter plan and above.",
-    "analytics.upgradePlan": "Upgrade Plan",
+      "Analytics is currently being prepared for public release.",
+    "analytics.upgradePlan": "Browse Podcasts",
     "analytics.overview.title": "Play Overview",
     "analytics.overview.totalPlays": "Total Plays",
     "analytics.overview.currentMonth": "This Month",

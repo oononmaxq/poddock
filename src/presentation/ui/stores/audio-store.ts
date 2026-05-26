@@ -47,6 +47,7 @@ let pendingSeekTime: number | null = null;
 let lastSnapshotSaveMs = 0;
 let lastRemoteSyncMs = 0;
 let remoteSyncMode: 'unknown' | 'enabled' | 'disabled' = 'unknown';
+let authStatusPromise: Promise<'enabled' | 'disabled'> | null = null;
 
 const SNAPSHOT_STORAGE_KEY = 'poddock:playback:snapshot:v1';
 const HISTORY_STORAGE_KEY = 'poddock:playback:history:v1';
@@ -185,6 +186,23 @@ function upsertLocalHistory(episode: Episode, positionSeconds: number, durationS
 
 async function syncHistoryToRemote(episode: Episode, positionSeconds: number, durationSeconds: number, force: boolean = false) {
   if (!isBrowser()) return;
+  if (remoteSyncMode === 'unknown') {
+    if (!authStatusPromise) {
+      authStatusPromise = fetch('/api/auth/status', {
+        credentials: 'include',
+      })
+        .then(async (response) => {
+          if (!response.ok) return 'disabled' as const;
+          const data = (await response.json()) as { authenticated?: boolean };
+          return data.authenticated ? ('enabled' as const) : ('disabled' as const);
+        })
+        .catch(() => 'disabled' as const)
+        .finally(() => {
+          authStatusPromise = null;
+        });
+    }
+    remoteSyncMode = await authStatusPromise;
+  }
   if (remoteSyncMode === 'disabled') return;
   const nowMs = Date.now();
   if (!force && nowMs - lastRemoteSyncMs < REMOTE_SYNC_INTERVAL_MS) return;

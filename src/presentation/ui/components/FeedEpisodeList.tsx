@@ -2,6 +2,7 @@ import { EpisodeComments } from './EpisodeComments';
 import { ExpandableText } from './ExpandableText';
 import { useEffect, useState } from 'preact/hooks';
 import { showToast } from './Toast';
+import { resolvePlayableUrl } from '../utils/playable-url';
 
 interface FeedEpisodeItem {
   id: string;
@@ -42,19 +43,6 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
     };
     void loadStatus();
   }, [items, sourceId]);
-
-  const resolvePlayableUrl = (url: string) => {
-    const anchorRedirectPattern = /\/podcast\/play\/\d+\/(.+)$/;
-    const match = url.match(anchorRedirectPattern);
-    if (match?.[1]) {
-      try {
-        return decodeURIComponent(match[1]);
-      } catch {
-        return url;
-      }
-    }
-    return url;
-  };
 
   const handlePlay = (item: FeedEpisodeItem) => {
     if (!item.enclosureUrl) return;
@@ -129,49 +117,51 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
   };
 
   return (
-    <div class="space-y-3">
+    <div class="space-y-2">
       {items.map((item) => {
         return (
           <article class="card border shadow-sm border-base-300 bg-base-100">
-            <div class="card-body">
-              <div class="flex items-start gap-3">
+            <div class="card-body p-3 sm:p-4">
+              <div class="flex items-start gap-1 sm:gap-2">
                 <button
                   type="button"
-                  class="btn btn-circle btn-sm mt-1 btn-outline"
-                  onClick={() => handlePlay(item)}
-                  disabled={!item.enclosureUrl}
-                  aria-label="再生"
+                  class={`btn btn-xs btn-ghost px-0 min-h-0 h-5 w-5 mt-0 sm:mt-0.5 ${favoriteKeys.has(item.episodeKey) ? 'text-warning' : ''}`}
+                  onClick={() => toggleFavorite(item)}
+                  disabled={favoriteLoading[item.episodeKey]}
+                  aria-label={favoriteKeys.has(item.episodeKey) ? 'お気に入り解除' : 'お気に入り追加'}
+                  title={favoriteKeys.has(item.episodeKey) ? 'お気に入り解除' : 'お気に入り追加'}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                    <path d="M8 5.14v14l11-7-11-7z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={favoriteKeys.has(item.episodeKey) ? 'currentColor' : 'none'} class="w-5 h-5">
+                    <path
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m12 3.6 2.61 5.3 5.85.85-4.23 4.12 1 5.83L12 17l-5.23 2.7 1-5.83L3.54 9.75l5.85-.85L12 3.6Z"
+                    />
                   </svg>
                 </button>
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start justify-between gap-2">
-                    <h3 class="card-title text-lg">{item.title || '(untitled)'}</h3>
+                    <h3 class="card-title text-base sm:text-lg leading-tight overflow-hidden text-ellipsis whitespace-nowrap sm:whitespace-normal">
+                      {item.title || '(untitled)'}
+                    </h3>
                     <button
                       type="button"
-                      class={`btn btn-xs btn-ghost ${favoriteKeys.has(item.episodeKey) ? 'text-warning' : ''}`}
-                      onClick={() => toggleFavorite(item)}
-                      disabled={favoriteLoading[item.episodeKey]}
-                      aria-label={favoriteKeys.has(item.episodeKey) ? 'お気に入り解除' : 'お気に入り追加'}
-                      title={favoriteKeys.has(item.episodeKey) ? 'お気に入り解除' : 'お気に入り追加'}
+                      class="btn btn-circle btn-xs sm:btn-sm btn-outline"
+                      onClick={() => handlePlay(item)}
+                      disabled={!item.enclosureUrl}
+                      aria-label="再生"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={favoriteKeys.has(item.episodeKey) ? 'currentColor' : 'none'} class="w-4 h-4">
-                        <path
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="m12 3.6 2.61 5.3 5.85.85-4.23 4.12 1 5.83L12 17l-5.23 2.7 1-5.83L3.54 9.75l5.85-.85L12 3.6Z"
-                        />
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+                        <path d="M8 5.14v14l11-7-11-7z" />
                       </svg>
                     </button>
                   </div>
-                  <div class="text-xs text-base-content/60 font-medium">{item.pubDate || '公開日なし'}</div>
+                  <div class="text-[11px] sm:text-xs text-base-content/60 font-medium">{item.pubDate || '公開日なし'}</div>
                   {item.description && (
-                    <div class="mt-2">
+                    <div class="mt-2 hidden sm:block">
                       <ExpandableText
                         text={item.description}
                         collapsedLines={2}
@@ -179,7 +169,7 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
                       />
                     </div>
                   )}
-                  <div class="flex flex-wrap gap-2 text-sm mt-3">
+                  <div class="hidden sm:flex flex-wrap gap-2 text-sm mt-3">
                     {item.link && (
                       <a href={item.link} class="btn btn-xs btn-outline" target="_blank" rel="noopener noreferrer">
                         詳細ページ
@@ -191,7 +181,9 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
                       </a>
                     )}
                   </div>
-                  <EpisodeComments sourceId={sourceId} episodeKey={item.episodeKey} />
+                  <div class="hidden sm:block">
+                    <EpisodeComments sourceId={sourceId} episodeKey={item.episodeKey} />
+                  </div>
                 </div>
               </div>
             </div>
