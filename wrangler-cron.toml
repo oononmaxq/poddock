@@ -1,0 +1,11 @@
+name = "poddock-cron"
+main = "workers/cron/index.ts"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "poddock-db-production"
+database_id = "ce382f1b-00a4-403b-952c-d3b7d4685b47"
+
+[triggers]
+crons = ["0 * * * *"]

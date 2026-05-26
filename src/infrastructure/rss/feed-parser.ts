@@ -18,6 +18,7 @@ export interface ParsedRssFeed {
   ownerEmail: string;
   imageUrl: string | null;
   categories: string[];
+  lastBuildDate: string | null;
   items: ParsedRssItem[];
 }
 
@@ -155,6 +156,7 @@ export function parseRssXml(xml: string): ParsedRssFeed {
     ownerEmail: owner.ownerEmail,
     imageUrl: imageUrlMatch?.[1] ? cleanText(imageUrlMatch[1]) : null,
     categories: collectCategories(channelXml),
+    lastBuildDate: cleanText(firstTagValue(channelXml, ['lastBuildDate', 'pubDate'])) || null,
     items: parseItems(channelXml),
   };
 }
