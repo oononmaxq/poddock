@@ -405,6 +405,47 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
           <button>close</button>
         </form>
       </dialog>
+
+      <dialog id="service-change-dialog" class="modal">
+        <div class="modal-box max-w-lg">
+          <h3 class="font-bold text-lg">サービス内容変更のお知らせ</h3>
+          <div class="py-4 text-sm text-base-content/80 leading-relaxed space-y-3">
+            <p>
+              いつもポッドドックをご利用いただきありがとうございます。
+            </p>
+            <p>
+              2025年5月25日より、ポッドドックは<strong>Podcast配信SaaS</strong>から<strong>Podcastを探せる発見サービス</strong>へと生まれ変わりました。
+            </p>
+            <p>
+              これまでご利用いただいていた配信機能（番組作成・エピソード投稿・RSS配信など）は終了し、現在は公開されているPodcast番組を検索・視聴できるサービスとして運営しております。
+            </p>
+            <p>
+              旧サービスでご登録いただいたデータにつきましては、お手数ですが個別にお問い合わせください。
+            </p>
+            <p class="text-xs text-base-content/60">
+              ご不明な点がございましたら、<a href="/removal-request" class="link link-primary">お問い合わせページ</a>よりご連絡ください。
+            </p>
+          </div>
+          <div class="modal-action">
+            <form method="dialog">
+              <button class="btn btn-sm btn-primary">理解しました</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
+
+      <div class="mt-12 text-center">
+        <button
+          type="button"
+          class="text-xs text-base-content/40 hover:text-base-content/60 underline underline-offset-2"
+          onclick="document.getElementById('service-change-dialog')?.showModal()"
+        >
+          2025年5月25日以前にご利用いただいたお客様へ
+        </button>
+      </div>
     </main>
     <div id="fixed-audio-player-shell" transition:persist transition:name="fixed-audio-player">
       <FixedAudioPlayer client:load />
