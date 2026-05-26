@@ -13,6 +13,7 @@ import { nowISO } from '@infrastructure/utils/date';
 import { sendEmail, createMagicLinkEmail } from '@infrastructure/email/resend';
 
 const MAGIC_LINK_EXPIRY_MINUTES = 15;
+const MAGIC_LINK_GRACE_PERIOD_SECONDS = 30; // PWA redirect grace period
 
 const requestMagicLinkSchema = z.object({
   email: z.string().email(),
@@ -180,36 +181,60 @@ authRoutes.get('/verify', authRateLimiter, async (c) => {
     return c.redirect('/login?error=invalid_token');
   }
 
+  // Check if token was already used
+  let isWithinGracePeriod = false;
   if (magicLink.usedAt) {
-    if (wantsJson) {
-      throw new AppError(400, 'token_used', 'This link has already been used');
-    }
-    return c.redirect('/login?error=token_used');
-  }
+    // Allow reuse within grace period for PWA redirect scenarios
+    const usedAtTime = new Date(magicLink.usedAt).getTime();
+    const gracePeriodMs = MAGIC_LINK_GRACE_PERIOD_SECONDS * 1000;
+    isWithinGracePeriod = Date.now() - usedAtTime < gracePeriodMs;
 
-  // Mark token as used with atomic update to prevent race condition
-  // Only update if usedAt is still null (optimistic locking)
-  try {
-    const result = await db.update(magicLinks)
-      .set({ usedAt: now })
-      .where(and(
-        eq(magicLinks.id, magicLink.id),
-        eq(magicLinks.usedAt, null as unknown as string) // Only update if not already used
-      ));
-
-    // Check if update actually modified a row
-    // D1 returns rowsAffected in the result
-    if (!result.rowsAffected || result.rowsAffected === 0) {
-      // Another request already used this token
+    if (!isWithinGracePeriod) {
       if (wantsJson) {
         throw new AppError(400, 'token_used', 'This link has already been used');
       }
       return c.redirect('/login?error=token_used');
     }
-  } catch (err) {
-    if (err instanceof AppError) throw err;
-    console.error('Failed to update magic_links:', err);
-    throw new AppError(500, 'db_error', 'Failed to verify token');
+    // Within grace period: skip marking as used, proceed to issue JWT
+  }
+
+  // Mark token as used (only if not already used)
+  if (!isWithinGracePeriod) {
+    try {
+      const result = await db.update(magicLinks)
+        .set({ usedAt: now })
+        .where(and(
+          eq(magicLinks.id, magicLink.id),
+          eq(magicLinks.usedAt, null as unknown as string) // Only update if not already used
+        ));
+
+      // Check if update actually modified a row
+      // If another request already used this token, check grace period
+      if (!result.rowsAffected || result.rowsAffected === 0) {
+        // Re-fetch to check if within grace period
+        const refreshedLink = await db.query.magicLinks.findFirst({
+          where: eq(magicLinks.id, magicLink.id),
+        });
+
+        if (refreshedLink?.usedAt) {
+          const usedAtTime = new Date(refreshedLink.usedAt).getTime();
+          const gracePeriodMs = MAGIC_LINK_GRACE_PERIOD_SECONDS * 1000;
+          if (Date.now() - usedAtTime < gracePeriodMs) {
+            // Within grace period, continue
+            isWithinGracePeriod = true;
+          } else {
+            if (wantsJson) {
+              throw new AppError(400, 'token_used', 'This link has already been used');
+            }
+            return c.redirect('/login?error=token_used');
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof AppError) throw err;
+      console.error('Failed to update magic_links:', err);
+      throw new AppError(500, 'db_error', 'Failed to verify token');
+    }
   }
 
   // Find or create user
