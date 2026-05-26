@@ -14,6 +14,8 @@ interface RateLimitConfig {
   windowSeconds: number;
   /** Key prefix for namespacing different limiters */
   keyPrefix?: string;
+  /** Optional key generator for custom bucketing (defaults to client IP) */
+  keyGenerator?: (c: Context<AppEnv>) => string;
 }
 
 // In-memory store for rate limiting
@@ -47,13 +49,13 @@ function getClientIdentifier(c: Context<AppEnv>): string {
 }
 
 export function createRateLimiter(config: RateLimitConfig) {
-  const { limit, windowSeconds, keyPrefix = 'rl' } = config;
+  const { limit, windowSeconds, keyPrefix = 'rl', keyGenerator } = config;
 
   return async (c: Context<AppEnv>, next: Next) => {
     cleanupStaleEntries();
 
-    const clientId = getClientIdentifier(c);
-    const key = `${keyPrefix}:${clientId}`;
+    const bucketKey = keyGenerator ? keyGenerator(c) : getClientIdentifier(c);
+    const key = `${keyPrefix}:${bucketKey}`;
     const now = Date.now();
     const windowMs = windowSeconds * 1000;
 
@@ -97,6 +99,17 @@ export const authRateLimiter = createRateLimiter({
   limit: 5,
   windowSeconds: 900, // 15 minutes
   keyPrefix: 'auth',
+});
+
+export const verifyRateLimiter = createRateLimiter({
+  limit: 20,
+  windowSeconds: 900, // 15 minutes
+  keyPrefix: 'verify',
+  keyGenerator: (c) => {
+    const ip = getClientIdentifier(c);
+    const token = c.req.query('token') || 'no-token';
+    return `${ip}:${token.slice(0, 32)}`;
+  },
 });
 
 export const magicLinkRateLimiter = createRateLimiter({
