@@ -69,8 +69,12 @@ export function PlayerScreen() {
           </div>
 
           <div class="mt-10">
-            <h1 class="text-4xl font-bold leading-tight">{episode.title}</h1>
-            <p class="mt-2 text-2xl text-white/75">{episode.podcastTitle}</p>
+            <div class="player-title-marquee text-4xl font-bold leading-tight">
+              <span>{episode.title}</span>
+            </div>
+            <a href={`/feeds/${episode.podcastId}`} class="mt-2 inline-block text-2xl text-white/75 underline-offset-4 hover:underline">
+              {episode.podcastTitle}
+            </a>
           </div>
 
           <div class="mt-8">
@@ -127,6 +131,28 @@ export function PlayerScreen() {
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes player-title-marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-100%); }
+        }
+        .player-title-marquee {
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .player-title-marquee > span {
+          display: inline-block;
+          padding-left: 100%;
+          animation: player-title-marquee 16s linear infinite;
+          will-change: transform;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .player-title-marquee > span {
+            animation: none;
+            padding-left: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
