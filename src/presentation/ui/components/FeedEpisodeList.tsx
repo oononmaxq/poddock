@@ -3,6 +3,7 @@ import { ExpandableText } from './ExpandableText';
 import { useEffect, useState } from 'preact/hooks';
 import { showToast } from './Toast';
 import { resolvePlayableUrl } from '../utils/playable-url';
+import { currentEpisode, isPlaying } from '../stores/audio-store';
 
 interface FeedEpisodeItem {
   id: string;
@@ -119,8 +120,14 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
   return (
     <div class="space-y-2">
       {items.map((item) => {
+        const episodeId = `${sourceId}:${item.id}`;
+        const isCurrentEpisode = currentEpisode.value?.id === episodeId;
+        const isCurrentPlaying = isCurrentEpisode && isPlaying.value;
+
         return (
-          <article class="card border shadow-sm border-base-300 bg-base-100">
+          <article
+            class={`card border shadow-sm bg-base-100 transition-colors ${isCurrentEpisode ? 'border-warning ring-2 ring-warning/60' : 'border-base-300'}`}
+          >
             <div class="card-body p-3 sm:p-4">
               <div class="flex items-start gap-1 sm:gap-2">
                 <button
@@ -149,14 +156,22 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
                     </h3>
                     <button
                       type="button"
-                      class="btn btn-circle btn-xs sm:btn-sm btn-outline"
+                      class={`btn btn-circle btn-xs sm:btn-sm ${isCurrentEpisode ? 'btn-warning' : 'btn-outline'}`}
                       onClick={() => handlePlay(item)}
                       disabled={!item.enclosureUrl}
-                      aria-label="再生"
+                      aria-label={isCurrentPlaying ? '再生中' : '再生'}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                        <path d="M8 5.14v14l11-7-11-7z" />
-                      </svg>
+                      {isCurrentPlaying ? (
+                        <span class="flex items-end gap-0.5 h-3.5">
+                          <span class="w-0.5 h-2 bg-current animate-pulse" />
+                          <span class="w-0.5 h-3.5 bg-current animate-pulse [animation-delay:120ms]" />
+                          <span class="w-0.5 h-2.5 bg-current animate-pulse [animation-delay:240ms]" />
+                        </span>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+                          <path d="M8 5.14v14l11-7-11-7z" />
+                        </svg>
+                      )}
                     </button>
                   </div>
                   <div class="text-[11px] sm:text-xs text-base-content/60 font-medium">{item.pubDate || '公開日なし'}</div>
