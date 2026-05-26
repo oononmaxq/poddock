@@ -63,7 +63,8 @@ async function refreshRssSnapshots(env: Env, limit: number) {
   for (const source of sources) {
     try {
       const feed = await fetchAndParseRss(source.feed_url);
-      const latestPubDateRaw = feed.items.reduce<string | null>((latest, item) => {
+      // Use lastBuildDate from feed, fallback to latest episode pubDate
+      const latestPubDateRaw = feed.lastBuildDate ?? feed.items.reduce<string | null>((latest, item) => {
         if (!item.pubDate) return latest;
         if (!latest) return item.pubDate;
         return Date.parse(item.pubDate) > Date.parse(latest) ? item.pubDate : latest;
