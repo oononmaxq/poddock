@@ -5,6 +5,9 @@ interface EpisodeInlineCardProps {
   onPlay: () => void;
   playAriaLabel: string;
   disabled?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  favoriteLoading?: boolean;
 }
 
 export function EpisodeInlineCard({
@@ -14,22 +17,45 @@ export function EpisodeInlineCard({
   onPlay,
   playAriaLabel,
   disabled = false,
+  isFavorite = false,
+  onToggleFavorite,
+  favoriteLoading = false,
 }: EpisodeInlineCardProps) {
   return (
     <article class="card border shadow-sm border-base-300 bg-base-100">
       <div class="card-body p-3 sm:p-4">
         <div class="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2">
-          <span class="inline-flex items-center justify-center h-6 w-6 text-warning">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
-              <path
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m12 3.6 2.61 5.3 5.85.85-4.23 4.12 1 5.83L12 17l-5.23 2.7 1-5.83L3.54 9.75l5.85-.85L12 3.6Z"
-              />
-            </svg>
-          </span>
+          {onToggleFavorite ? (
+            <button
+              type="button"
+              class={`btn btn-ghost btn-xs btn-circle ${isFavorite ? 'text-warning' : 'text-base-content/30 hover:text-warning'}`}
+              onClick={onToggleFavorite}
+              disabled={favoriteLoading}
+              aria-label={isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+            >
+              {favoriteLoading ? (
+                <span class="loading loading-spinner loading-xs" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" class="w-4 h-4">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m12 3.6 2.61 5.3 5.85.85-4.23 4.12 1 5.83L12 17l-5.23 2.7 1-5.83L3.54 9.75l5.85-.85L12 3.6Z"
+                  />
+                </svg>
+              )}
+            </button>
+          ) : (
+            <span class={`inline-flex items-center justify-center h-6 w-6 ${isFavorite ? 'text-warning' : 'text-base-content/30'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" class="w-4 h-4">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m12 3.6 2.61 5.3 5.85.85-4.23 4.12 1 5.83L12 17l-5.23 2.7 1-5.83L3.54 9.75l5.85-.85L12 3.6Z"
+                />
+              </svg>
+            </span>
+          )}
           <div class="flex-shrink-0">
             {imageUrl ? (
               <img src={imageUrl} alt={imageAlt} class="w-10 h-10 rounded-md object-cover" />
