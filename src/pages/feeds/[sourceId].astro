@@ -203,8 +203,8 @@ const podcastJsonLd = {
 
     <main class="px-4 sm:px-6 lg:px-12 pt-2 sm:pt-4 pb-10">
       <div class="max-w-5xl mx-auto">
-        <div class="mb-4">
-          <div class="relative overflow-hidden rounded-xl border border-base-300 bg-base-200 mb-4">
+        <div class="mb-4 lg:flex lg:gap-6 lg:items-start">
+          <div class="relative overflow-hidden rounded-xl border border-base-300 bg-base-200 mb-4 lg:mb-0 lg:w-1/4 lg:flex-shrink-0">
             {safeFeed.imageUrl ? (
               <img src={safeFeed.imageUrl} alt={feedTitle} class="w-full aspect-square object-cover" />
             ) : (
@@ -212,33 +212,36 @@ const podcastJsonLd = {
                 <span class="text-base-content/50">No Image</span>
               </div>
             )}
-            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-3 py-2">
+            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-3 py-2 lg:hidden">
               <div class="channel-title-marquee text-white text-base sm:text-lg font-bold">
                 <span>{feedTitle}</span>
               </div>
             </div>
           </div>
-          {feedDescription ? (
-            <>
-              <p class="text-sm text-base-content/80 overflow-hidden text-ellipsis whitespace-nowrap">
-                {feedDescription}
-              </p>
-              <div class="mt-1 flex justify-end">
-                <button type="button" class="link link-hover text-xs text-base-content/70" onclick="document.getElementById('feed-description-dialog')?.showModal()">
-                  詳細表示
-                </button>
-              </div>
-            </>
-          ) : (
-            <p class="text-base-content/70">説明はありません。</p>
-          )}
-          <div class="mt-3 flex items-center justify-end gap-2 flex-wrap">
-            {outboundChannelLink && (
-              <a href={outboundChannelLink} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">
-                配信元ページ
-              </a>
+          <div class="lg:flex-1">
+            <h1 class="hidden lg:block text-2xl font-bold mb-2">{feedTitle}</h1>
+            {feedDescription ? (
+              <>
+                <p class="text-sm text-base-content/80 overflow-hidden text-ellipsis whitespace-nowrap lg:whitespace-normal lg:line-clamp-3">
+                  {feedDescription}
+                </p>
+                <div class="mt-1 flex justify-end lg:justify-start">
+                  <button type="button" class="link link-hover text-xs text-base-content/70" onclick="document.getElementById('feed-description-dialog')?.showModal()">
+                    詳細表示
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p class="text-base-content/70">説明はありません。</p>
             )}
-            <ChannelSubscriptionButton client:load sourceId={source.id} initialLoggedIn={isLoggedIn} />
+            <div class="mt-3 flex items-center justify-end lg:justify-start gap-2 flex-wrap">
+              {outboundChannelLink && (
+                <a href={outboundChannelLink} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">
+                  配信元ページ
+                </a>
+              )}
+              <ChannelSubscriptionButton client:load sourceId={source.id} initialLoggedIn={isLoggedIn} />
+            </div>
           </div>
         </div>
 
