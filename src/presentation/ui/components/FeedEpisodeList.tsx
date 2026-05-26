@@ -46,13 +46,14 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
   }, [items, sourceId]);
 
   const handlePlay = (item: FeedEpisodeItem) => {
-    if (!item.enclosureUrl) return;
+    const playableUrl = item.enclosureUrl || item.link;
+    if (!playableUrl) return;
     const episode = {
       id: `${sourceId}:${item.id}`,
       title: item.title || '(untitled)',
       podcastId: sourceId,
       podcastTitle,
-      audioUrl: resolvePlayableUrl(item.enclosureUrl),
+      audioUrl: resolvePlayableUrl(playableUrl),
       coverImageUrl: podcastImageUrl || undefined,
     };
     window.dispatchEvent(new CustomEvent('poddock:play-episode', { detail: episode }));
@@ -158,7 +159,7 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
                       type="button"
                       class={`btn btn-circle btn-xs sm:btn-sm ${isCurrentEpisode ? 'btn-warning' : 'btn-outline'}`}
                       onClick={() => handlePlay(item)}
-                      disabled={!item.enclosureUrl}
+                      disabled={!(item.enclosureUrl || item.link)}
                       aria-label={isCurrentPlaying ? '再生中' : '再生'}
                     >
                       {isCurrentPlaying ? (
