@@ -27,7 +27,18 @@ interface Env {
   DB: D1Database;
 }
 
-const SNAPSHOT_REFRESH_LIMIT = 10;
+const SNAPSHOT_REFRESH_LIMIT = 50;
+
+function toIsoDate(dateStr: string | null): string | null {
+  if (!dateStr) return null;
+  try {
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) return null;
+    return parsed.toISOString();
+  } catch {
+    return null;
+  }
+}
 
 async function refreshRssSnapshots(env: Env, limit: number) {
   const now = new Date().toISOString();
@@ -52,11 +63,12 @@ async function refreshRssSnapshots(env: Env, limit: number) {
   for (const source of sources) {
     try {
       const feed = await fetchAndParseRss(source.feed_url);
-      const latestPublishedAt = feed.items.reduce<string | null>((latest, item) => {
+      const latestPubDateRaw = feed.items.reduce<string | null>((latest, item) => {
         if (!item.pubDate) return latest;
         if (!latest) return item.pubDate;
         return Date.parse(item.pubDate) > Date.parse(latest) ? item.pubDate : latest;
       }, null);
+      const latestPublishedAt = toIsoDate(latestPubDateRaw);
 
       await env.DB
         .prepare(
