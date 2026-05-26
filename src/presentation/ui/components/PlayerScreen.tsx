@@ -97,12 +97,7 @@ export function PlayerScreen() {
             </div>
           </div>
 
-          <div class="mt-8 flex items-center justify-between">
-            <button type="button" class="btn btn-ghost btn-circle text-white" aria-label="シャッフル">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" class="h-6 w-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5m0-5-6 6m-2 2-6 6m0 0H2m5 0v5m0-5 6-6m2-2 6-6" />
-              </svg>
-            </button>
+          <div class="mt-8 flex items-center justify-center gap-8">
             <button type="button" class="btn btn-ghost btn-circle text-white" onClick={() => skipBackward(15)} aria-label="15秒戻る">
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-8 w-8">
                 <path d="M11 12 21 18V6l-10 6Zm-8.5 0L10 18V6l-7.5 6Z" />
@@ -127,11 +122,6 @@ export function PlayerScreen() {
             <button type="button" class="btn btn-ghost btn-circle text-white" onClick={() => skipForward(30)} aria-label="30秒進む">
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-8 w-8">
                 <path d="M13 6v12l10-6-10-6Zm-9.5 0L11 12 3.5 18V6Z" />
-              </svg>
-            </button>
-            <button type="button" class="btn btn-ghost btn-circle text-white" aria-label="リピート">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" class="h-6 w-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 2v4h-4m-6 4H3v12h12v-4m2-12h4v12h-4M7 6h10" />
               </svg>
             </button>
           </div>
