@@ -13,6 +13,7 @@
     "db:migrate:staging": "wrangler d1 migrations apply poddock-db-staging --env staging --remote",
     "test": "vitest run",
     "test:watch": "vitest",
+    "security:check": "bash -lc 'set -euo pipefail; BASE_URL=\"${SECURITY_CHECK_BASE_URL:-http://localhost:4321}\"; if [[ \"$BASE_URL\" == https://* ]]; then REQUIRED=\"^strict-transport-security:|^content-security-policy:|^x-frame-options:|^x-content-type-options:|^referrer-policy:|^permissions-policy:\"; else REQUIRED=\"^content-security-policy:|^x-frame-options:|^x-content-type-options:|^referrer-policy:|^permissions-policy:\"; fi; for path in / /login /api/auth/status; do echo \"\\n== ${BASE_URL}${path} ==\"; curl -sSI \"${BASE_URL}${path}\" | grep -Ei \"$REQUIRED\"; done'",
     "deploy": "astro build && wrangler pages deploy dist"
   },
   "dependencies": {

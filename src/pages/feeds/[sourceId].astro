@@ -144,7 +144,7 @@ const podcastJsonLd = {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <title>{feedTitle} | PODDOCK</title>
     <meta name="description" content={feedMetaDescription} />
     <meta name="robots" content={robotsContent} />
@@ -178,7 +178,7 @@ const podcastJsonLd = {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </div>
-            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+            <ul id="auth-menu-list" tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
               <li><a href="/">トップページ</a></li>
               <li><a href="/mypage">マイページ</a></li>
               <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
@@ -192,7 +192,7 @@ const podcastJsonLd = {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </div>
-            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+            <ul id="auth-menu-list" tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
               <li><a href="/login">ログイン</a></li>
               <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
             </ul>
@@ -336,14 +336,59 @@ const podcastJsonLd = {
       </form>
     </dialog>
     <script>
-      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      const authMenu = document.getElementById('auth-menu-list');
+      const loggedInMenuHtml = `
+        <li><a href="/">トップページ</a></li>
+        <li><a href="/mypage">マイページ</a></li>
+        <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+        <li><button type="button" id="logout-btn">ログアウト</button></li>
+      `;
+      const loggedOutMenuHtml = `
+        <li><a href="/login">ログイン</a></li>
+        <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+      `;
+
+      const handleLogout = async () => {
         try {
           await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
         } catch {
           // ignore
         }
         window.location.href = '/login';
-      });
+      };
+
+      const bindLogoutHandler = () => {
+        const logoutButton = document.getElementById('logout-btn');
+        if (!logoutButton || logoutButton.getAttribute('data-bound') === '1') return;
+        logoutButton.setAttribute('data-bound', '1');
+        logoutButton.addEventListener('click', handleLogout);
+      };
+
+      const renderAuthMenu = (isAuthenticated) => {
+        if (!authMenu) return;
+        authMenu.innerHTML = isAuthenticated ? loggedInMenuHtml : loggedOutMenuHtml;
+        bindLogoutHandler();
+      };
+
+      const syncAuthMenu = async () => {
+        try {
+          const response = await fetch('/api/auth/status', { credentials: 'include', cache: 'no-store' });
+          if (!response.ok) return;
+          const data = await response.json();
+          renderAuthMenu(Boolean(data?.authenticated));
+        } catch {
+          // ignore
+        }
+      };
+
+      const refreshAuthMenu = () => {
+        syncAuthMenu();
+      };
+
+      document.addEventListener('astro:page-load', refreshAuthMenu);
+      document.addEventListener('astro:after-swap', refreshAuthMenu);
+      bindLogoutHandler();
+      syncAuthMenu();
     </script>
     <style>
       @keyframes channel-title-marquee {

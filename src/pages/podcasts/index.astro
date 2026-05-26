@@ -29,7 +29,7 @@ const cookieHeader = Astro.request.headers.get('cookie') || '';
 const isLoggedIn = cookieHeader.includes('access_token=');
 const userAgent = Astro.request.headers.get('user-agent')?.toLowerCase() || '';
 const isMobileDevice = /iphone|ipod|android.+mobile|windows phone/.test(userAgent);
-const PAGE_SIZE = isMobileDevice ? 12 : 15;
+const PAGE_SIZE = isMobileDevice ? 9 : 18;
 
 const selectFields = {
   id: rssSources.id,
@@ -211,7 +211,7 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <title>番組一覧 | PODDOCK</title>
     <meta name="description" content="RSSから収集した公開中のPodcast番組一覧。カテゴリ別に番組を探せます。" />
     <meta name="robots" content={robotsContent} />
@@ -245,7 +245,7 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </div>
-            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+            <ul id="auth-menu-list" tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
               <li><a href="/">トップページ</a></li>
               <li><a href="/mypage">マイページ</a></li>
               <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
@@ -259,7 +259,7 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
                 <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </div>
-            <ul tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+            <ul id="auth-menu-list" tabIndex={0} class="menu menu-sm dropdown-content z-[80] mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-2 shadow">
               <li><a href="/login">ログイン</a></li>
               <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
             </ul>
@@ -272,11 +272,11 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
       <div class="max-w-6xl mx-auto">
         {categoryStats.length > 0 && (
           <div class="mb-5 sm:mb-6">
-            <div class="sm:hidden">
-              <div class="dropdown w-full">
-                <div tabIndex={0} role="button" class="btn btn-sm w-full justify-between normal-case border-base-300 bg-base-200">
-                  <span class="truncate">カテゴリ: {selectedCategory ?? 'すべて'}</span>
-                  <span class="text-xs text-base-content/60">選択</span>
+            <div class="sm:hidden flex items-center gap-2">
+              <div class="dropdown flex-1">
+                <div tabIndex={0} role="button" class="btn btn-sm w-full justify-between normal-case border-base-300 bg-base-200 px-2">
+                  <span class="truncate text-xs">カテゴリ: {selectedCategory ?? 'すべて'}</span>
+                  <span class="text-[10px] text-base-content/60">選択</span>
                 </div>
                 <ul
                   tabIndex={0}
@@ -302,6 +302,27 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
                   ))}
                 </ul>
               </div>
+              <div class="dropdown flex-1">
+                <div tabIndex={0} role="button" class="btn btn-sm w-full justify-between normal-case border-base-300 bg-base-200 px-2">
+                  <span class="truncate text-xs">並び順: {selectedSort === 'latest' ? '最新更新' : 'エピソード数'}</span>
+                  <span class="text-[10px] text-base-content/60">選択</span>
+                </div>
+                <ul
+                  tabIndex={0}
+                  class="dropdown-content menu mt-2 w-full rounded-box border border-base-300 bg-base-200 p-2 shadow-lg z-[60]"
+                >
+                  <li>
+                    <a href={buildPodcastsUrl({ sort: 'latest', page: 1 })} class:list={{ active: selectedSort === 'latest' }}>
+                      最新更新
+                    </a>
+                  </li>
+                  <li>
+                    <a href={buildPodcastsUrl({ sort: 'episodes', page: 1 })} class:list={{ active: selectedSort === 'episodes' }}>
+                      エピソード数
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
             <div class="hidden sm:flex flex-wrap items-center gap-1.5 sm:gap-2">
               <a href={buildPodcastsUrl({ category: null, page: 1 })} class:list={['btn btn-xs sm:btn-sm min-h-8 h-8', { 'btn-primary': !selectedCategory, 'btn-ghost': selectedCategory }]}>
@@ -322,7 +343,7 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
           </div>
         )}
 
-        <div class="mb-6 flex flex-wrap items-center gap-2">
+        <div class="mb-6 hidden sm:flex flex-wrap items-center gap-2">
           <span class="text-sm text-base-content/60">並び順:</span>
           <a href={buildPodcastsUrl({ sort: 'latest', page: 1 })} class:list={['btn btn-xs', { 'btn-primary': selectedSort === 'latest', 'btn-ghost': selectedSort !== 'latest' }]}>
             最新更新
@@ -390,14 +411,59 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
     </div>
     <ClientRouter />
     <script>
-      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      const authMenu = document.getElementById('auth-menu-list');
+      const loggedInMenuHtml = `
+        <li><a href="/">トップページ</a></li>
+        <li><a href="/mypage">マイページ</a></li>
+        <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+        <li><button type="button" id="logout-btn">ログアウト</button></li>
+      `;
+      const loggedOutMenuHtml = `
+        <li><a href="/login">ログイン</a></li>
+        <li><button type="button" onclick="document.getElementById('about-poddock-dialog')?.showModal()">ポッドドックとは？</button></li>
+      `;
+
+      const handleLogout = async () => {
         try {
           await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
         } catch {
           // ignore
         }
         window.location.href = '/login';
-      });
+      };
+
+      const bindLogoutHandler = () => {
+        const logoutButton = document.getElementById('logout-btn');
+        if (!logoutButton || logoutButton.getAttribute('data-bound') === '1') return;
+        logoutButton.setAttribute('data-bound', '1');
+        logoutButton.addEventListener('click', handleLogout);
+      };
+
+      const renderAuthMenu = (isAuthenticated) => {
+        if (!authMenu) return;
+        authMenu.innerHTML = isAuthenticated ? loggedInMenuHtml : loggedOutMenuHtml;
+        bindLogoutHandler();
+      };
+
+      const syncAuthMenu = async () => {
+        try {
+          const response = await fetch('/api/auth/status', { credentials: 'include', cache: 'no-store' });
+          if (!response.ok) return;
+          const data = await response.json();
+          renderAuthMenu(Boolean(data?.authenticated));
+        } catch {
+          // ignore
+        }
+      };
+
+      const refreshAuthMenu = () => {
+        syncAuthMenu();
+      };
+
+      document.addEventListener('astro:page-load', refreshAuthMenu);
+      document.addEventListener('astro:after-swap', refreshAuthMenu);
+      bindLogoutHandler();
+      syncAuthMenu();
     </script>
   </body>
 </html>

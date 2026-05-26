@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { eq, and, gt } from 'drizzle-orm';
 import type { AppEnv } from '../types';
 import { AppError } from '../middleware/error-handler';
-import { magicLinkRateLimiter, authRateLimiter } from '../middleware/rate-limit';
+import { magicLinkRateLimiter, verifyRateLimiter } from '../middleware/rate-limit';
 import { createDb } from '@infrastructure/db/client';
 import { adminUsers, magicLinks } from '@infrastructure/db/schema';
 import { createToken, verifyToken } from '@infrastructure/auth/jwt';
@@ -144,8 +144,8 @@ authRoutes.post('/magic-link', magicLinkRateLimiter, async (c) => {
 });
 
 // Verify magic link token and issue JWT
-// Rate limited to 5 requests per 15 minutes
-authRoutes.get('/verify', authRateLimiter, async (c) => {
+// Rate limited per IP+token bucket to absorb link prefetch/retries safely
+authRoutes.get('/verify', verifyRateLimiter, async (c) => {
   const token = c.req.query('token');
   const acceptHeader = c.req.header('Accept') || '';
   const wantsJson = prefersJson(acceptHeader);

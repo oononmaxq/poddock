@@ -31,6 +31,30 @@ export const duration = signal(0);
 export const volume = signal(1);
 export const playbackRate = signal(1);
 
+// Feed episode list for prev/next navigation
+export interface FeedEpisodeInfo {
+  id: string;
+  title: string;
+  audioUrl: string;
+  coverImageUrl?: string;
+  durationSeconds?: number;
+}
+export const currentFeedEpisodes = signal<FeedEpisodeInfo[]>([]);
+export const currentFeedPodcastId = signal<string | null>(null);
+export const currentFeedPodcastTitle = signal<string>('');
+
+export function setFeedEpisodes(podcastId: string, podcastTitle: string, episodes: FeedEpisodeInfo[]) {
+  currentFeedPodcastId.value = podcastId;
+  currentFeedPodcastTitle.value = podcastTitle;
+  currentFeedEpisodes.value = episodes;
+}
+
+export function clearFeedEpisodes() {
+  currentFeedPodcastId.value = null;
+  currentFeedPodcastTitle.value = '';
+  currentFeedEpisodes.value = [];
+}
+
 // Derived state
 export const progress = computed(() => {
   if (duration.value === 0) return 0;
