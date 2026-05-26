@@ -1,11 +1,14 @@
 import { useEffect } from 'preact/hooks';
 import {
+  type Episode,
   currentEpisode,
   isPlaying,
   progress,
   formattedCurrentTime,
   formattedDuration,
   getAudioElement,
+  getLocalPlaybackHistory,
+  playEpisode,
   togglePlay,
   seekByPercent,
   skipBackward,
@@ -44,6 +47,26 @@ export function PlayerScreen() {
   }
 
   const progressPercent = Math.max(0, Math.min(progress.value, 100));
+  const history = getLocalPlaybackHistory(50);
+  const currentHistoryIndex = history.findIndex((item) => item.episodeId === episode.id);
+  const previousHistoryItem = currentHistoryIndex >= 0 ? history[currentHistoryIndex + 1] : null;
+  const nextHistoryItem = currentHistoryIndex > 0 ? history[currentHistoryIndex - 1] : null;
+
+  const playFromHistory = (direction: 'prev' | 'next') => {
+    const target = direction === 'prev' ? previousHistoryItem : nextHistoryItem;
+    if (!target) return;
+    const nextEpisode: Episode = {
+      id: target.episodeId,
+      title: target.title,
+      podcastId: target.podcastId,
+      podcastTitle: target.podcastTitle,
+      audioUrl: target.audioUrl,
+      coverImageUrl: target.coverImageUrl,
+      durationSeconds: target.durationSeconds,
+      initialTimeSeconds: target.lastPositionSeconds,
+    };
+    playEpisode(nextEpisode);
+  };
 
   return (
     <div class="min-h-screen bg-black text-white">
@@ -130,10 +153,20 @@ export function PlayerScreen() {
             </button>
           </div>
           <div class="mt-6 grid grid-cols-2 gap-3">
-            <button type="button" class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white">
+            <button
+              type="button"
+              class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white disabled:border-white/20 disabled:text-white/40"
+              onClick={() => playFromHistory('prev')}
+              disabled={!previousHistoryItem}
+            >
               前のエピソード
             </button>
-            <button type="button" class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white">
+            <button
+              type="button"
+              class="btn btn-outline border-white/40 text-white hover:bg-white/10 hover:text-white disabled:border-white/20 disabled:text-white/40"
+              onClick={() => playFromHistory('next')}
+              disabled={!nextHistoryItem}
+            >
               次のエピソード
             </button>
           </div>
