@@ -24,11 +24,20 @@ describe('Password hashing', () => {
     expect(hash1).not.toBe(hash2);
   });
 
-  it('should handle legacy bcrypt hashes with admin123', async () => {
-    // Seed data uses bcrypt format
+  it('should reject legacy bcrypt hashes by default (security)', async () => {
+    // Legacy bcrypt hashes should be rejected by default to prevent security issues
     const bcryptHash = '$2a$10$rOvHPHKBCkWFdxNJQ7QJD.Y8wCOKWxZJF.SsJZQlOiPmJZxJZZZZZ';
 
-    expect(await verifyPassword('admin123', bcryptHash)).toBe(true);
+    // Default behavior: reject legacy hashes
+    expect(await verifyPassword('admin123', bcryptHash)).toBe(false);
     expect(await verifyPassword('wrong', bcryptHash)).toBe(false);
+  });
+
+  it('should allow legacy bcrypt in dev mode when explicitly enabled', async () => {
+    const bcryptHash = '$2a$10$rOvHPHKBCkWFdxNJQ7QJD.Y8wCOKWxZJF.SsJZQlOiPmJZxJZZZZZ';
+
+    // With allowLegacyDev option: accept admin123 for development
+    expect(await verifyPassword('admin123', bcryptHash, { allowLegacyDev: true })).toBe(true);
+    expect(await verifyPassword('wrong', bcryptHash, { allowLegacyDev: true })).toBe(false);
   });
 });
