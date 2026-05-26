@@ -36,27 +36,22 @@ export function ChannelSubscriptionButton({ sourceId, initialLoggedIn }: Channel
       window.location.href = '/login';
       return;
     }
+    if (isSubscribed) return;
     setLoading(true);
     try {
-      const response = isSubscribed
-        ? await fetch(`/api/channel-subscriptions/${encodeURIComponent(sourceId)}`, {
-            method: 'DELETE',
-            credentials: 'include',
-          })
-        : await fetch('/api/channel-subscriptions', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ source_id: sourceId }),
-          });
+      const response = await fetch('/api/channel-subscriptions', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_id: sourceId }),
+      });
       if (response.status === 401 || response.status === 403) {
         window.location.href = '/login';
         return;
       }
       if (response.ok) {
-        const nextState = !isSubscribed;
-        setIsSubscribed(nextState);
-        showToast(nextState ? 'チャンネル登録しました' : 'チャンネル登録を解除しました', nextState ? 'success' : 'info');
+        setIsSubscribed(true);
+        showToast('チャンネル登録しました', 'success');
       } else {
         showToast('チャンネル登録の更新に失敗しました', 'error');
       }
@@ -70,14 +65,14 @@ export function ChannelSubscriptionButton({ sourceId, initialLoggedIn }: Channel
   return (
     <button
       type="button"
-      class={`btn btn-sm ${isSubscribed ? 'btn-outline' : 'btn-primary'}`}
+      class={`btn btn-sm ${isSubscribed ? 'border-yellow-500 text-yellow-500 bg-transparent hover:bg-base-100' : 'btn-primary'}`}
       onClick={handleToggle}
       disabled={loading}
     >
       {loading ? (
         <span class="loading loading-spinner loading-xs" />
       ) : isSubscribed ? (
-        '登録解除'
+        'チャンネル登録済'
       ) : (
         'チャンネル登録'
       )}

@@ -9,6 +9,7 @@ import { FeedEpisodeList } from '../../presentation/ui/components/FeedEpisodeLis
 import { FixedAudioPlayer } from '../../presentation/ui/components/FixedAudioPlayer';
 import { ChannelSubscriptionButton } from '../../presentation/ui/components/ChannelSubscriptionButton';
 import { ToastContainer } from '../../presentation/ui/components/Toast';
+import Pagination from '../../presentation/ui/components/Pagination.astro';
 
 const { sourceId } = Astro.params;
 const db = createDb(Astro.locals.runtime.env.DB);
@@ -42,6 +43,9 @@ const safeFeed = feed ?? {
   description: '',
   language: 'ja',
   author: '',
+  copyright: '',
+  ownerName: '',
+  ownerEmail: '',
   imageUrl: null,
   categories: [] as string[],
   items: [] as Array<{
@@ -100,7 +104,8 @@ const firstEpisodeLink = safeFeed.items
     return aTime - bTime;
   })[0]?.link ?? null;
 const outboundChannelLink = safeFeed.link || firstEpisodeLink;
-const removalRequestUrl = `/removal-request?sourceId=${encodeURIComponent(source.id)}&feedUrl=${encodeURIComponent(source.feedUrl)}`;
+const listingInquiryUrl = `/removal-request?sourceId=${encodeURIComponent(source.id)}&feedUrl=${encodeURIComponent(source.feedUrl)}`;
+const hasRightsInfo = Boolean(safeFeed.copyright || safeFeed.ownerName);
 
 const buildFeedUrl = (next: { sort?: SortKey; page?: number }) => {
   const params = new URLSearchParams();
@@ -218,14 +223,16 @@ const podcastJsonLd = {
               <p class="text-sm text-base-content/80 overflow-hidden text-ellipsis whitespace-nowrap">
                 {feedDescription}
               </p>
+              <div class="mt-1 flex justify-end">
+                <button type="button" class="link link-hover text-xs text-base-content/70" onclick="document.getElementById('feed-description-dialog')?.showModal()">
+                  詳細表示
+                </button>
+              </div>
             </>
           ) : (
             <p class="text-base-content/70">説明はありません。</p>
           )}
           <div class="mt-3 flex items-center justify-end gap-2 flex-wrap">
-            <a href={removalRequestUrl} class="btn btn-sm btn-ghost">
-              掲載削除依頼
-            </a>
             {outboundChannelLink && (
               <a href={outboundChannelLink} class="btn btn-sm btn-outline" target="_blank" rel="noopener noreferrer">
                 配信元ページ
@@ -266,24 +273,7 @@ const podcastJsonLd = {
             />
           )}
 
-          {totalPages > 1 && (
-            <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
-              <a href={buildFeedUrl({ page: Math.max(1, safePage - 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage <= 1 }]}>
-                前へ
-              </a>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <a
-                  href={buildFeedUrl({ page })}
-                  class:list={['btn btn-sm', { 'btn-primary': page === safePage, 'btn-ghost': page !== safePage }]}
-                >
-                  {page}
-                </a>
-              ))}
-              <a href={buildFeedUrl({ page: Math.min(totalPages, safePage + 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage >= totalPages }]}>
-                次へ
-              </a>
-            </div>
-          )}
+          <Pagination currentPage={safePage} totalPages={totalPages} getPageUrl={(page) => buildFeedUrl({ page })} />
         </section>
       </div>
     </main>
@@ -297,8 +287,44 @@ const podcastJsonLd = {
         <h3 class="font-bold text-lg">ポッドドックとは？</h3>
         <p class="py-2 text-sm text-base-content/80 leading-relaxed">
           ポッドドックは、Podcastを見つけやすくするための発見サイトです。
+          RSSなど公開されている情報をベースに、番組情報を掲載しています。
           カテゴリや更新順で番組を探し、気になる番組の詳細ページからすぐ再生できます。
         </p>
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn btn-sm">閉じる</button>
+          </form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+    <dialog id="feed-description-dialog" class="modal">
+      <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-lg mb-2">番組説明</h3>
+        <p class="text-sm text-base-content/80 leading-relaxed whitespace-pre-wrap break-words">
+          {feedDescription || '説明はありません。'}
+        </p>
+        {hasRightsInfo && (
+          <div class="mt-3 rounded-lg border border-base-300 bg-base-200 px-3 py-2 text-xs text-base-content/80 space-y-1">
+            {safeFeed.copyright && (
+              <p>
+                <span class="font-semibold">権利表記:</span> {safeFeed.copyright}
+              </p>
+            )}
+            {safeFeed.ownerName && (
+              <p>
+                <span class="font-semibold">権利者名:</span> {safeFeed.ownerName}
+              </p>
+            )}
+          </div>
+        )}
+        <div class="mt-3 flex justify-end">
+          <a href={listingInquiryUrl} class="link link-hover text-xs text-base-content/70">
+            この掲載に関する問い合わせ
+          </a>
+        </div>
         <div class="modal-action">
           <form method="dialog">
             <button class="btn btn-sm">閉じる</button>

@@ -5,6 +5,7 @@ import { createDb } from '../infrastructure/db/client';
 import { rssSourceSnapshots, rssSources } from '../infrastructure/db/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 import { FixedAudioPlayer } from '../presentation/ui/components/FixedAudioPlayer';
+import Pagination from '../presentation/ui/components/Pagination.astro';
 import {
   getCanonicalCategories,
   normalizeCategory,
@@ -363,30 +364,14 @@ const buildPodcastsUrl = (next: { category?: string | null; sort?: SortKey; page
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
-            <a href={buildPodcastsUrl({ page: Math.max(1, safePage - 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage <= 1 }]}>
-              前へ
-            </a>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <a
-                href={buildPodcastsUrl({ page })}
-                class:list={['btn btn-sm', { 'btn-primary': page === safePage, 'btn-ghost': page !== safePage }]}
-              >
-                {page}
-              </a>
-            ))}
-            <a href={buildPodcastsUrl({ page: Math.min(totalPages, safePage + 1) })} class:list={['btn btn-sm', { 'btn-disabled': safePage >= totalPages }]}>
-              次へ
-            </a>
-          </div>
-        )}
+        <Pagination currentPage={safePage} totalPages={totalPages} getPageUrl={(page) => buildPodcastsUrl({ page })} />
       </div>
       <dialog id="about-poddock-dialog" class="modal">
         <div class="modal-box max-w-lg">
           <h3 class="font-bold text-lg">ポッドドックとは？</h3>
           <p class="py-2 text-sm text-base-content/80 leading-relaxed">
             ポッドドックは、Podcastを見つけやすくするための発見サイトです。
+            RSSなど公開されている情報をベースに、番組情報を掲載しています。
             カテゴリや更新順で番組を探し、気になる番組の詳細ページからすぐ再生できます。
           </p>
           <div class="modal-action">
