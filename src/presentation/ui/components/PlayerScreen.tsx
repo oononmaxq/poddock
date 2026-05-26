@@ -54,15 +54,7 @@ export function PlayerScreen() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25 12 15.75 4.5 8.25" />
             </svg>
           </button>
-          <div class="tabs tabs-boxed bg-white/10 p-1">
-            <a class="tab tab-sm tab-active text-white">曲</a>
-            <a class="tab tab-sm text-white/70">動画</a>
-          </div>
-          <button type="button" class="btn btn-ghost btn-circle btn-sm text-white" aria-label="メニュー">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-5 w-5">
-              <path d="M12 7a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 7.5A1.5 1.5 0 1 0 12 11a1.5 1.5 0 0 0 0 3.5ZM13.5 20a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-            </svg>
-          </button>
+          <div class="w-8" />
         </div>
 
         <div class="flex flex-1 flex-col justify-center pt-8">
@@ -143,12 +135,6 @@ export function PlayerScreen() {
               </svg>
             </button>
           </div>
-        </div>
-
-        <div class="mt-8 grid grid-cols-3 gap-2 text-center text-base text-white/80">
-          <button type="button" class="btn btn-ghost btn-sm text-white/90">次のコンテンツ</button>
-          <button type="button" class="btn btn-ghost btn-sm text-white/60">歌詞</button>
-          <button type="button" class="btn btn-ghost btn-sm text-white/60">関連コンテンツ</button>
         </div>
       </div>
     </div>
