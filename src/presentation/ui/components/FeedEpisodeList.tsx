@@ -45,8 +45,16 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
     void loadStatus();
   }, [items, sourceId]);
 
+  const resolveEpisodePlayableUrl = (item: FeedEpisodeItem): string | null => {
+    const httpLike = [item.enclosureUrl, item.link, item.episodeKey]
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .find((value) => /^https?:\/\//i.test(value));
+    if (httpLike) return httpLike;
+    return item.enclosureUrl || item.link || null;
+  };
+
   const handlePlay = (item: FeedEpisodeItem) => {
-    const playableUrl = item.enclosureUrl || item.link;
+    const playableUrl = resolveEpisodePlayableUrl(item);
     if (!playableUrl) return;
     const episode = {
       id: `${sourceId}:${item.id}`,
@@ -159,7 +167,7 @@ export function FeedEpisodeList({ sourceId, podcastTitle, podcastImageUrl, items
                       type="button"
                       class={`btn btn-circle btn-xs sm:btn-sm ${isCurrentEpisode ? 'btn-warning' : 'btn-outline'}`}
                       onClick={() => handlePlay(item)}
-                      disabled={!(item.enclosureUrl || item.link)}
+                      disabled={!resolveEpisodePlayableUrl(item)}
                       aria-label={isCurrentPlaying ? '再生中' : '再生'}
                     >
                       {isCurrentPlaying ? (
